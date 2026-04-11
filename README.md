@@ -13,9 +13,25 @@ pre_release_format=dev$separator$commit_count$separator$commit_short_sha$separat
 build_format=
 ```
 
+Available variables for `pre_release_format` and `build_format`:
+
+| Variable | Description |
+|---|---|
+| `$separator` | Replaced with `.` (dot) |
+| `$commit_count` | Number of commits since the last release |
+| `$commit_short_sha` | Short SHA of the latest commit |
+| `$dirty_indicator` | Replaced with the value of `dirty_indicator` if there are uncommitted changes |
+| `$branch` | Current Git branch name |
+
+You can generate a default configuration file with:
+
+```shell
+git-semver-release create-config-file
+```
+
 ## Prerequisites
 
-* [Git 2.4+](https://git-scm.com/) - `git tag --points-at` support`
+* [Git 2.4+](https://git-scm.com/) - `git tag --points-at` support
 * [Bash 4+](https://www.gnu.org/software/bash/)
 
 ## Installation
@@ -24,6 +40,7 @@ Download the tool to ~/.local/bin:
 
 ```shell
 curl https://raw.githubusercontent.com/michalstutzmann/git-semver-release/refs/heads/main/git-semver-release --output ~/.local/bin/git-semver-release
+chmod +x ~/.local/bin/git-semver-release
 ```
 
 > Make sure ~/.local/bin is in your PATH.
@@ -48,27 +65,48 @@ Examples (with default configuration):
 Create release tag:
 
 ```shell
-git-semver-release [(major|minor|patch)] [MESSAGE]
+git-semver-release (major|minor|patch) [MESSAGE]
 ```
+
+The MESSAGE can contain `$version` which will be replaced with the calculated version number.
 
 Examples (patch with default configuration):
 
-| Latest release Tag | Uncommited changes | `git-semver-release patch` release tag |
-|--------------------|--------------------|----------------------------------------|
-| -                  | no                 | -                                      |
-| -                  | yes                | -                                      |
-| -                  | no                 | v0.0.0                                 |                      
-| v0.0.0             | no                 | v0.0.1                                 |
-| v0.0.1             | no                 | v0.0.2                                 |
+| Latest release tag | Uncommitted changes | `git-semver-release patch` release tag |
+|--------------------|---------------------|----------------------------------------|
+| -                  | no                  | v0.0.1                                 |
+| -                  | yes                 | -  (error: uncommitted changes)        |
+| v0.0.0             | no                  | v0.0.1                                 |
+| v0.0.1             | no                  | v0.0.2                                 |
+| v0.1.0             | no                  | v0.1.1                                 |
+
+Examples (major/minor):
+
+| Latest release tag | `git-semver-release major` | `git-semver-release minor` |
+|--------------------|----------------------------|----------------------------|
+| v0.0.1             | v1.0.0                     | v0.1.0                     |
+| v1.2.3             | v2.0.0                     | v1.3.0                     |
+
+Create release tag using conventional commits (default when no subcommand is given):
+
+```shell
+git-semver-release [MESSAGE]
+```
+
+When called without `major`, `minor`, or `patch`, the tool determines the version bump type from the latest commit message using [Conventional Commits](https://www.conventionalcommits.org/):
+
+- **major**: commit message contains `!:` (breaking change indicator) or `BREAKING CHANGE:` in the body
+- **minor**: commit message starts with `feat:`
+- **patch**: all other commit messages
 
 Examples (conventional):
 
-| Latest release tag | Latest commit message matches regex | `git-semver-release` release tag |
-|--------------------|-------------------------------------|----------------------------------|
-| -                  | ^(a-z)+: .+$                        | v0.0.1                           |
-| v0.0.1             | ^feat: .+$                          | v0.1.0                           |
-| v0.1.0             | ^feat!: .+$                         | v1.0.0                           |
-| v1.0.0             | ^feat: .+\nBREAKING CHANGE: .+$     | v2.0.0                           |
+| Latest release tag | Latest commit message matches regex  | `git-semver-release` release tag |
+|--------------------|--------------------------------------|----------------------------------|
+| -                  | `^[a-z]+: .+$`                      | v0.0.1                           |
+| v0.0.1             | `^feat: .+$`                        | v0.1.0                           |
+| v0.1.0             | `^feat!: .+$`                       | v1.0.0                           |
+| v1.0.0             | `^feat: .+\nBREAKING CHANGE: .+$`   | v2.0.0                           |
 
 ## Use Cases
 
@@ -95,7 +133,7 @@ sbt "set version := \"$(git-semver-release version)\"" publish
 #### Docker
 
 ```shell
-docker build --push --tag "$(git-semver-release version)" .
+docker build --push --tag "myregistry/myimage:$(git-semver-release version)" .
 ```
 
 ## Development

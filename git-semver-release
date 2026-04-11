@@ -232,7 +232,7 @@ main() {
        ;;
     major | minor | patch)
       if is_dirty; then
-        printf 'error: uncommited changes found' 1>&2
+        printf 'error: uncommitted changes found' 1>&2
         return 6
       fi
 
@@ -241,7 +241,7 @@ main() {
       ;;
     *)
       if is_dirty; then
-        printf 'error: uncommited changes found' 1>&2
+        printf 'error: uncommitted changes found' 1>&2
         return 6
       fi
 

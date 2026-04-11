@@ -82,7 +82,7 @@ teardown() {
 
   run --separate-stderr ./git-semver-release patch 'Release'
   assert_failure 6
-  assert_stderr 'error: uncommited changes found'
+  assert_stderr 'error: uncommitted changes found'
 }
 
 @test "Calculate version for commit without previous release" {
