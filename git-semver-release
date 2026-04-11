@@ -83,8 +83,11 @@ version() {
 
     if [[ $version_type == 'major' ]]; then
       ((major_version++))
+      minor_version='0'
+      patch_version='0'
     elif [[ $version_type == 'minor' ]]; then
       ((minor_version++))
+      patch_version='0'
     elif [[ $version_type == 'patch' ]]; then
       ((patch_version++))
     fi
