@@ -32,6 +32,59 @@ teardown() {
   assert_stderr 'error: no commits yet'
 }
 
+@test "Detect dirty tree with untracked files" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create an untracked file
+  printf 'untracked' > tmp/untracked
+
+  run ./git-semver-release version
+  assert_success
+  assert_output --regexp '\.dirty$'
+}
+
+@test "Detect dirty tree with unstaged modifications" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Modify tracked file without staging
+  printf 'modified' > "$TEST_FILE"
+
+  run ./git-semver-release version
+  assert_success
+  assert_output --regexp '\.dirty$'
+}
+
+@test "Detect dirty tree with staged but uncommitted changes" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Stage a change without committing
+  printf 'staged' > "$TEST_FILE"
+  git add test
+
+  run ./git-semver-release version
+  assert_success
+  assert_output --regexp '\.dirty$'
+}
+
+@test "Fail release when tree is dirty" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create an untracked file
+  printf 'untracked' > tmp/untracked
+
+  run --separate-stderr ./git-semver-release patch 'Release'
+  assert_failure 6
+  assert_stderr 'error: uncommited changes found'
+}
+
 @test "Calculate version for commit without previous release" {
   # Initialize Git repository
   initialize
