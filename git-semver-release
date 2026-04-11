@@ -1,0 +1,251 @@
+#!/usr/bin/env bash
+
+is_repository() {
+  if git rev-parse --git-dir > /dev/null 2>&1; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+has_commits() {
+  if git log > /dev/null 2>&1; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+get_describe_output() {
+  git describe --always --match 'v*' 2> /dev/null || {
+   printf ''
+  }
+}
+
+get_commit_count() {
+  git rev-list HEAD --count
+}
+
+get_git_branch() {
+  git rev-parse --abbrev-ref HEAD
+}
+
+is_dirty() {
+  if git diff-index --quiet HEAD > /dev/null 2>&1; then
+    return 1
+  else
+    return 0
+  fi
+}
+
+get_last_commit_message() {
+  git log -1 --pretty=format:%B | cat
+}
+
+get_latest_tag_for_commit_pointed_by_tag() {
+  local -r tag="$1"
+
+  local commit_sha
+  commit_sha="$(git rev-list -1 "$tag")"
+  git tag --points-at "$commit_sha" --list --sort=-creatordate
+}
+
+version() {
+  local -r pre_release_format="$1"
+  local -r build_format="$2"
+  local -r dirty_indicator="$3"
+  local -r output_format="$4"
+  local -r version_type="$5"
+
+  local git_describe_output
+  git_describe_output="$(get_describe_output)"
+
+  local major_version
+  local minor_version
+  local patch_version
+  local commit_count
+  local commit_short_sha
+
+  # Release exists with possible additional commits
+  if [[ "$git_describe_output" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)(-([0-9]+))?(-g([a-f0-9]{7}))?$ ]]; then
+    major_version="${BASH_REMATCH[1]}"
+    minor_version="${BASH_REMATCH[2]}"
+    patch_version="${BASH_REMATCH[3]}"
+    commit_count="${BASH_REMATCH[5]}"
+    commit_short_sha="${BASH_REMATCH[7]}"
+
+    # If two releases point to the same commit take the latest one
+    if [[ "$(get_latest_tag_for_commit_pointed_by_tag "v$major_version.$minor_version.$patch_version")" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+      major_version="${BASH_REMATCH[1]}"
+      minor_version="${BASH_REMATCH[2]}"
+      patch_version="${BASH_REMATCH[3]}"
+    fi
+
+    if [[ $version_type == 'major' ]]; then
+      ((major_version++))
+    elif [[ $version_type == 'minor' ]]; then
+      ((minor_version++))
+    elif [[ $version_type == 'patch' ]]; then
+      ((patch_version++))
+    fi
+  # Release does not exist but there are commits
+  elif [[ $git_describe_output =~ ^([a-f0-9]{7})$ ]]; then
+    major_version='0'
+    minor_version='0'
+    patch_version='0'
+
+    if [[ $version_type == 'major' ]]; then
+      ((major_version++))
+    elif [[ $version_type == 'minor' ]]; then
+      ((minor_version++))
+    elif [[ $version_type == 'patch' ]]; then
+      ((patch_version++))
+    fi
+
+    commit_count="$(get_commit_count)"
+    commit_short_sha="${BASH_REMATCH[1]}"
+  # There are no commits
+  else
+    major_version='0'
+    minor_version='0'
+    patch_version='0'
+  fi
+
+  local version="$major_version.$minor_version.$patch_version"
+
+  if [[ -n $commit_count ]]; then
+    pre_release="$pre_release_format"
+    pre_release="${pre_release//\$branch/"$(get_git_branch)"}"
+    pre_release="${pre_release//\$commit_count/"$commit_count"}"
+    pre_release="${pre_release//\$commit_short_sha/"$commit_short_sha"}"
+
+    if is_dirty; then
+      pre_release="${pre_release//\$dirty_indicator/"$dirty_indicator"}"
+    else
+      pre_release="${pre_release//\$dirty_indicator/''}"
+    fi
+  else
+    pre_release="$pre_release_format"
+    pre_release="${pre_release//\$branch/"$(get_git_branch)"}"
+    pre_release="${pre_release//\$commit_count/''}"
+    pre_release="${pre_release//\$commit_short_sha/''}"
+
+    if is_dirty; then
+      pre_release="${pre_release//\$dirty_indicator/"$dirty_indicator"}"
+    else
+      pre_release=''
+    fi
+  fi
+
+  pre_release="${pre_release//\$separator/'.'}"
+  pre_release="$(printf '%s' "$pre_release" | tr -s '.')"
+  pre_release="${pre_release%.}"
+  pre_release="${pre_release#.}"
+
+  version="$version-$pre_release"
+  version="${version%-}"
+
+  printf '%s' "$version"
+}
+
+release() {
+  local -r pre_release_format="$1"
+  local -r build_format="$2"
+  local -r dirty_indicator="$3"
+  local -r message="$4"
+  local -r version_type="$5"
+
+  local version
+  version="$(version "$pre_release_format" "$build_format" "$dirty_indicator" 'semver' "$version_type")"
+
+  if [[ $version =~ ^([0-9]+\.[0-9]+\.[0-9]+).*$ ]]; then
+      version="${BASH_REMATCH[1]}"
+  fi
+
+  local -r tag="v$version"
+
+  if [[ -n $message ]]; then
+    git tag --annotate "$tag" --message "${message//\$version/"$version"}"
+  else
+    git tag --annotate "$tag"
+  fi
+}
+
+conventional() {
+  local -r pre_release_format="$1"
+  local -r build_format="$2"
+  local -r dirty_indicator="$3"
+  local -r message="$4"
+
+  local last_commit_message
+  last_commit_message="$(get_last_commit_message)" || return 1
+
+  local version_type
+
+  if [[ $last_commit_message =~ ^.+(.+)?!:\ .+$ || $last_commit_message =~ ^.+(.+)?:\ .+BREAKING\ CHANGE:\ .+$ ]]; then
+    version_type='major'
+  elif [[ $last_commit_message =~ ^feat(.+)?:\ .+$ ]]; then
+    version_type='minor'
+  else
+    version_type='patch'
+  fi
+
+  release "$pre_release_format" "$build_format" "$dirty_indicator" "$message" "$version_type" || return 2
+}
+
+main() {
+  if ! is_repository; then
+    printf 'fatal: not a Git repository' 1>&2
+    return 2
+  fi
+
+  if ! has_commits; then
+    printf 'error: no commits yet' 1>&2
+    return 3
+  fi
+
+  declare -A config
+  if [[ -f .git-semver-release.properties ]]; then
+      while IFS='=' read -r key value; do
+         config["$key"]="$value"
+      done < .git-semver-release.properties
+  fi
+
+  local -r pre_release_format="${config["pre_release_format"]}"
+  local -r build_format="${config["build_format"]}"
+  local -r dirty_indicator="${config["dirty_indicator"]}"
+
+  local -r mode="$1"
+
+  case "$mode" in
+    create-config-file)
+      printf 'dirty_indicator=dirty\npre_release_format=dev$separator$commit_count$separator$commit_short_sha$separator$dirty_indicator\nbuild_format=\n' > \
+        .git-semver-release.properties || return 4
+      ;;
+    version)
+       local -r output_format="$3"
+
+       version "$pre_release_format" "$build_format" "$dirty_indicator" "$output_format" 'patch' || return 5
+       ;;
+    major | minor | patch)
+      if is_dirty; then
+        printf 'error: uncommited changes found' 1>&2
+        return 6
+      fi
+
+      local -r message="$2"
+      release "$pre_release_format" "$build_format" "$dirty_indicator" "$message" "$mode" || return 7
+      ;;
+    *)
+      if is_dirty; then
+        printf 'error: uncommited changes found' 1>&2
+        return 6
+      fi
+
+      local -r message="$1"
+      conventional "$pre_release_format" "$build_format" "$dirty_indicator" "$message" || return 8
+      ;;
+  esac
+}
+
+main "$@"
