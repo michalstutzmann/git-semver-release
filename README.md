@@ -135,13 +135,13 @@ This produces versions like `0.0.1-feature-login.3.abcdef0` instead of `0.0.1-de
 | Code | Meaning |
 |-|-|
 | 0 | Success |
-| 2 | Not a Git repository |
-| 3 | No commits in the repository |
-| 4 | Failed to create config file |
-| 5 | Failed to calculate version |
-| 6 | Uncommitted changes (release commands only) |
-| 7 | Failed to create release tag (explicit bump) |
-| 8 | Failed to create release tag (conventional commits) |
+| 1 | Not a Git repository |
+| 2 | No commits in the repository |
+| 3 | Failed to create config file |
+| 4 | Failed to calculate version |
+| 5 | Uncommitted changes (release commands only) |
+| 6 | Failed to create release tag (explicit bump) |
+| 7 | Failed to create release tag (conventional commits) |
 
 ## GitHub Action
 

@@ -1,0 +1,44 @@
+---
+name: 'Git SemVer Release'
+description: 'Create Git tag-based releases using Semantic Versioning'
+branding:
+  icon: 'tag'
+  color: 'blue'
+inputs:
+  command:
+    description: 'Command to run: version, major, minor, patch, or empty for conventional commits'
+    required: false
+    default: 'version'
+  message:
+    description: 'Tag message (supports $version placeholder)'
+    required: false
+    default: ''
+outputs:
+  version:
+    description: 'The calculated or released version'
+    value: ${{ steps.semver.outputs.version }}
+runs:
+  using: 'composite'
+  steps:
+    - name: Run git-semver-release
+      id: semver
+      shell: bash
+      run: |
+        chmod +x "${{ github.action_path }}/git-semver-release"
+
+        command="${{ inputs.command }}"
+        message="${{ inputs.message }}"
+
+        if [ "$command" = "version" ]; then
+          version=$("${{ github.action_path }}/git-semver-release" version)
+        elif [ -n "$command" ] && [ -n "$message" ]; then
+          version=$("${{ github.action_path }}/git-semver-release" "$command" "$message")
+        elif [ -n "$command" ]; then
+          version=$("${{ github.action_path }}/git-semver-release" "$command")
+        elif [ -n "$message" ]; then
+          version=$("${{ github.action_path }}/git-semver-release" "$message")
+        else
+          version=$("${{ github.action_path }}/git-semver-release")
+        fi
+
+        echo "version=$version" >> "$GITHUB_OUTPUT"

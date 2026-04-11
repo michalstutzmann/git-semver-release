@@ -199,12 +199,12 @@ conventional() {
 main() {
   if ! is_repository; then
     printf 'fatal: not a Git repository' 1>&2
-    return 2
+    return 1
   fi
 
   if ! has_commits; then
     printf 'error: no commits yet' 1>&2
-    return 3
+    return 2
   fi
 
   declare -A config
@@ -223,30 +223,30 @@ main() {
   case "$mode" in
     create-config-file)
       printf 'dirty_indicator=dirty\npre_release_format=dev$separator$commit_count$separator$commit_short_sha$separator$dirty_indicator\nbuild_format=\n' > \
-        .git-semver-release.properties || return 4
+        .git-semver-release.properties || return 3
       ;;
     version)
        local -r output_format="$3"
 
-       version "$pre_release_format" "$build_format" "$dirty_indicator" "$output_format" 'patch' || return 5
+       version "$pre_release_format" "$build_format" "$dirty_indicator" "$output_format" 'patch' || return 4
        ;;
     major | minor | patch)
       if is_dirty; then
         printf 'error: uncommitted changes found' 1>&2
-        return 6
+        return 5
       fi
 
       local -r message="$2"
-      release "$pre_release_format" "$build_format" "$dirty_indicator" "$message" "$mode" || return 7
+      release "$pre_release_format" "$build_format" "$dirty_indicator" "$message" "$mode" || return 6
       ;;
     *)
       if is_dirty; then
         printf 'error: uncommitted changes found' 1>&2
-        return 6
+        return 5
       fi
 
       local -r message="$1"
-      conventional "$pre_release_format" "$build_format" "$dirty_indicator" "$message" || return 8
+      conventional "$pre_release_format" "$build_format" "$dirty_indicator" "$message" || return 7
       ;;
   esac
 }
