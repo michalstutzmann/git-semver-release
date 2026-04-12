@@ -291,6 +291,59 @@ teardown() {
   assert_output --regexp '^v1\.0\.0$'
 }
 
+@test "Scan all commits since last tag: fix then feat bumps minor" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create initial release tag
+  tag "v0.0.0"
+  # Create multiple conventional commits
+  commit 'fix: first fix'
+  commit 'feat: new feature'
+  commit 'fix: second fix'
+
+  run ./git-semver-release 'Release'
+  assert_success
+  run git tag --points-at HEAD
+  assert_output --regexp '^v0\.1\.0$'
+}
+
+@test "Scan all commits since last tag: feat then breaking change bumps major" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create initial release tag
+  tag "v0.0.0"
+  # Create multiple conventional commits
+  commit 'feat: new feature'
+  commit 'feat!: breaking feature'
+  commit 'fix: small fix'
+
+  run ./git-semver-release 'Release'
+  assert_success
+  run git tag --points-at HEAD
+  assert_output --regexp '^v1\.0\.0$'
+}
+
+@test "Scan all commits since last tag: earlier feat wins over latest fix" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create initial release tag
+  tag "v1.0.0"
+  # Create multiple conventional commits — feat is earlier, fix is latest
+  commit 'feat: add search'
+  commit 'fix: typo'
+
+  run ./git-semver-release 'Release'
+  assert_success
+  run git tag --points-at HEAD
+  assert_output --regexp '^v1\.1\.0$'
+}
+
 initialize() {
   git init
   git config user.name 'test'

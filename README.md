@@ -76,7 +76,7 @@ The optional `MESSAGE` becomes the tag annotation. Use `$version` as a placehold
 git-semver-release [MESSAGE]
 ```
 
-When called without `major`, `minor`, or `patch`, the bump type is determined from the latest commit message following [Conventional Commits](https://www.conventionalcommits.org/). Optional scopes (e.g. `feat(auth):`) are supported.
+When called without `major`, `minor`, or `patch`, the bump type is determined from **all commit messages since the last release** following [Conventional Commits](https://www.conventionalcommits.org/). The highest bump type wins (major > minor > patch). Optional scopes (e.g. `feat(auth):`) are supported.
 
 | Commit message pattern | Bump type | Example |
 |-|-|-|
@@ -85,7 +85,7 @@ When called without `major`, `minor`, or `patch`, the bump type is determined fr
 | Starts with `feat:` or `feat(<scope>):` | **minor** | `feat(auth): add OAuth login` |
 | Everything else | **patch** | `fix: null pointer on empty input` |
 
-| Latest release tag | Latest commit message | Created tag |
+| Latest release tag | Commits since release | Created tag |
 |-|-|-|
 | *(none)* | `fix: typo` | `v0.0.1` |
 | `v0.0.1` | `feat: add search` | `v0.1.0` |
@@ -93,6 +93,8 @@ When called without `major`, `minor`, or `patch`, the bump type is determined fr
 | `v0.1.0` | `feat!: redesign API` | `v1.0.0` |
 | `v0.1.0` | `refactor(api)!: remove deprecated endpoints` | `v1.0.0` |
 | `v1.0.0` | `feat: add filter\nBREAKING CHANGE: changed response format` | `v2.0.0` |
+| `v1.0.0` | `fix: typo` → `feat: add search` → `fix: bug` | `v1.1.0` |
+| `v1.0.0` | `feat: add search` → `feat!: new API` → `fix: bug` | `v2.0.0` |
 
 ### `create-config-file` — Generate Default Configuration
 

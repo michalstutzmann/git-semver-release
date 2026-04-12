@@ -38,8 +38,35 @@ is_dirty() {
   fi
 }
 
-get_last_commit_message() {
-  git log -1 --pretty=format:%B | cat
+get_latest_release_tag() {
+  git describe --abbrev=0 --match 'v[0-9]*.[0-9]*.[0-9]*' 2>/dev/null || printf ''
+}
+
+get_bump_type_for_commits_since_tag() {
+  local -r tag="$1"
+  local bump_type='patch'
+
+  local range='HEAD'
+  if [[ -n $tag ]]; then
+    range="$tag..HEAD"
+  fi
+
+  local commit_hashes
+  commit_hashes="$(git rev-list "$range")"
+
+  local message
+  for hash in $commit_hashes; do
+    message="$(git log -1 --format=%B "$hash")"
+
+    if [[ $message =~ ^.+(.+)?!:\ .+$ || $message =~ ^.+(.+)?:\ .+BREAKING\ CHANGE:\ .+$ ]]; then
+      bump_type='major'
+      break
+    elif [[ $message =~ ^feat(.+)?:\ .+$ ]]; then
+      bump_type='minor'
+    fi
+  done
+
+  printf '%s' "$bump_type"
 }
 
 get_latest_tag_for_commit_pointed_by_tag() {
@@ -180,18 +207,11 @@ conventional() {
   local -r dirty_indicator="$3"
   local -r message="$4"
 
-  local last_commit_message
-  last_commit_message="$(get_last_commit_message)" || return 1
+  local latest_tag
+  latest_tag="$(get_latest_release_tag)"
 
   local version_type
-
-  if [[ $last_commit_message =~ ^.+(.+)?!:\ .+$ || $last_commit_message =~ ^.+(.+)?:\ .+BREAKING\ CHANGE:\ .+$ ]]; then
-    version_type='major'
-  elif [[ $last_commit_message =~ ^feat(.+)?:\ .+$ ]]; then
-    version_type='minor'
-  else
-    version_type='patch'
-  fi
+  version_type="$(get_bump_type_for_commits_since_tag "$latest_tag")" || return 1
 
   release "$pre_release_format" "$build_format" "$dirty_indicator" "$message" "$version_type" || return 2
 }
