@@ -47,7 +47,7 @@ get_latest_tag_for_commit_pointed_by_tag() {
 
   local commit_sha
   commit_sha="$(git rev-list -1 "$tag")"
-  git tag --points-at "$commit_sha" --list --sort=-creatordate
+  git tag --points-at "$commit_sha" --list --sort=-version:refname | head -1
 }
 
 version() {
@@ -88,7 +88,7 @@ version() {
     elif [[ $version_type == 'minor' ]]; then
       ((minor_version++))
       patch_version='0'
-    elif [[ $version_type == 'patch' ]]; then
+    elif [[ $version_type == 'patch' && -n $commit_count ]]; then
       ((patch_version++))
     fi
   # Release does not exist but there are commits

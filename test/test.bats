@@ -224,7 +224,7 @@ teardown() {
 
   run ./git-semver-release version
   assert_success
-  assert_output --regexp '^0\.0\.2$'
+  assert_output --regexp '^0\.0\.1$'
 }
 
 @test "Create patch release with conventional commit" {
