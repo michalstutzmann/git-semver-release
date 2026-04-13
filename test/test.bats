@@ -351,7 +351,7 @@ initialize() {
 }
 
 commit() {
-  local -t name="$1"
+  local name="$1"
 
   printf '%s' "$name" > "$TEST_FILE"
   git add .
@@ -359,7 +359,7 @@ commit() {
 }
 
 tag() {
-  local -t name="$1"
+  local name="$1"
 
   git tag --annotate "$name" --message "$name"
 }
