@@ -44,7 +44,7 @@ get_latest_release_tag() {
 
 get_bump_type_for_commits_since_tag() {
   local -r tag="$1"
-  local bump_type='patch'
+  local bump_type=''
 
   local range='HEAD'
   if [[ -n $tag ]]; then
@@ -63,6 +63,8 @@ get_bump_type_for_commits_since_tag() {
       break
     elif [[ $message =~ ^feat(\(.+\))?:\ .+$ ]]; then
       bump_type='minor'
+    elif [[ $message =~ ^(fix|perf)(\(.+\))?:\ .+$ && $bump_type != 'minor' ]]; then
+      bump_type='patch'
     fi
   done
 
@@ -212,6 +214,11 @@ conventional() {
   local version_type
   version_type="$(get_bump_type_for_commits_since_tag "$latest_tag")" || return 1
 
+  if [[ -z $version_type ]]; then
+    printf 'no releasable changes' 1>&2
+    return 8
+  fi
+
   release "$pre_release_format" "$dirty_indicator" "$message" "$version_type" || return 2
 }
 
@@ -264,7 +271,11 @@ main() {
       fi
 
       local -r message="$1"
-      conventional "$pre_release_format" "$dirty_indicator" "$message" || return 7
+      conventional "$pre_release_format" "$dirty_indicator" "$message"
+      local -r conventional_exit=$?
+      if [[ $conventional_exit -ne 0 ]]; then
+        return "$conventional_exit"
+      fi
       ;;
   esac
 }

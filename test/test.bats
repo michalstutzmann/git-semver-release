@@ -100,7 +100,7 @@ teardown() {
   # Initialize Git repository
   initialize
   # Create initial commit
-  commit 'Initial'
+  commit 'fix: initial fix'
 
   run ./git-semver-release 'Initial'
   assert_success
@@ -419,20 +419,67 @@ teardown() {
   assert_output --regexp '^v1\.1\.0$'
 }
 
-@test "Auto-bump patch when commits exist beyond tag" {
+@test "Auto-bump patch with fix commit beyond tag" {
   # Initialize Git repository
   initialize
   # Create initial commit
   commit 'Initial'
   # Create initial release tag
   tag "v1.0.0"
-  # Create another commit
-  commit 'Second'
+  # Create a fix commit
+  commit 'fix: typo'
 
   run ./git-semver-release 'Release'
   assert_success
   run git tag --points-at HEAD
   assert_output --regexp '^v1\.0\.1$'
+}
+
+@test "Auto-bump patch with perf commit beyond tag" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create initial release tag
+  tag "v1.0.0"
+  # Create a perf commit
+  commit 'perf: optimize query'
+
+  run ./git-semver-release 'Release'
+  assert_success
+  run git tag --points-at HEAD
+  assert_output --regexp '^v1\.0\.1$'
+}
+
+@test "Skip release when all commits are non-releasable" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create initial release tag
+  tag "v1.0.0"
+  # Create non-releasable commits
+  commit 'chore: update deps'
+  commit 'docs: update readme'
+
+  run --separate-stderr ./git-semver-release
+  assert_failure 8
+  assert_stderr 'no releasable changes'
+}
+
+@test "Skip release for non-conventional commits" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create initial release tag
+  tag "v1.0.0"
+  # Create a non-conventional commit
+  commit 'update something'
+
+  run --separate-stderr ./git-semver-release
+  assert_failure 8
+  assert_stderr 'no releasable changes'
 }
 
 @test "No patch bump when HEAD is at the latest tag" {
@@ -473,10 +520,9 @@ teardown() {
   # Create a non-conventional commit with bang
   commit 'this is not conventional!: something'
 
-  run ./git-semver-release 'Release'
-  assert_success
-  run git tag --points-at HEAD
-  assert_output --regexp '^v1\.0\.1$'
+  run --separate-stderr ./git-semver-release
+  assert_failure 8
+  assert_stderr 'no releasable changes'
 }
 
 @test "Message starting with feat prefix but not a conventional commit does not trigger minor bump" {
@@ -489,10 +535,9 @@ teardown() {
   # Create a commit that starts with 'feat' but is not a conventional commit
   commit 'featuring: new stuff'
 
-  run ./git-semver-release 'Release'
-  assert_success
-  run git tag --points-at HEAD
-  assert_output --regexp '^v1\.0\.1$'
+  run --separate-stderr ./git-semver-release
+  assert_failure 8
+  assert_stderr 'no releasable changes'
 }
 
 @test "Use custom dirty indicator from config" {

@@ -76,14 +76,15 @@ The optional `MESSAGE` becomes the tag annotation. Use `$version` as a placehold
 git-semver-release [MESSAGE]
 ```
 
-When called without `major`, `minor`, or `patch`, the bump type is determined from **all commit messages since the last release** following [Conventional Commits](https://www.conventionalcommits.org/). The highest bump type wins (major > minor > patch). Optional scopes (e.g. `feat(auth):`) are supported.
+When called without `major`, `minor`, or `patch`, the bump type is determined from **all commit messages since the last release** following [Conventional Commits](https://www.conventionalcommits.org/). The highest bump type wins (major > minor > patch). Optional scopes (e.g. `feat(auth):`) are supported. If no commits match a releasable type, the release is skipped with exit code 8.
 
 | Commit message pattern | Bump type | Example |
 |-|-|-|
 | Contains `!:` (breaking change indicator) | **major** | `feat!: remove v1 API` |
 | Contains `BREAKING CHANGE:` in the message body | **major** | `feat: new API\nBREAKING CHANGE: removed v1` |
 | Starts with `feat:` or `feat(<scope>):` | **minor** | `feat(auth): add OAuth login` |
-| Everything else | **patch** | `fix: null pointer on empty input` |
+| Starts with `fix:` / `perf:` (with optional scope) | **patch** | `fix: null pointer on empty input` |
+| Everything else (`chore:`, `docs:`, non-conventional, etc.) | **skip** | `chore: update deps` |
 
 | Latest release tag | Commits since release | Created tag |
 |-|-|-|
@@ -95,6 +96,7 @@ When called without `major`, `minor`, or `patch`, the bump type is determined fr
 | `v1.0.0` | `feat: add filter\nBREAKING CHANGE: changed response format` | `v2.0.0` |
 | `v1.0.0` | `fix: typo` → `feat: add search` → `fix: bug` | `v1.1.0` |
 | `v1.0.0` | `feat: add search` → `feat!: new API` → `fix: bug` | `v2.0.0` |
+| `v1.0.0` | `chore: update deps` → `docs: update readme` | *(skipped)* |
 
 ### `create-config-file` — Generate Default Configuration
 
@@ -144,6 +146,7 @@ This produces versions like `0.0.1-feature-login.3.abcdef0` instead of `0.0.1-de
 | 5 | Uncommitted changes (release commands only) |
 | 6 | Failed to create release tag (explicit bump) |
 | 7 | Failed to create release tag (conventional commits) |
+| 8 | No releasable changes (conventional commits only) |
 
 ## GitHub Action
 
