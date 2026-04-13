@@ -14,7 +14,7 @@ curl https://raw.githubusercontent.com/michalstutzmann/git-semver-release/refs/h
   --output ~/.local/bin/git-semver-release && chmod +x ~/.local/bin/git-semver-release
 
 # Get current pre-release version
-git-semver-release version        # e.g. 0.0.1-dev.3.abcdef0
+git-semver-release version        # e.g. 0.0.1-alpha.3.abcdef0
 
 # Create a release tag
 git-semver-release patch           # creates v0.0.1
@@ -39,10 +39,10 @@ Returns the current version **without creating a tag**. If HEAD is on a release 
 
 | Latest release tag | Commits since release | Short SHA | Uncommitted changes | Output |
 |-|-|-|-|-|
-| *(none)* | 1 | `abcdef0` | no | `0.0.0-dev.1.abcdef0` |
+| *(none)* | 1 | `abcdef0` | no | `0.0.0-alpha.1.abcdef0` |
 | `v0.0.0` | 0 | `abcdef0` | no | `0.0.0` |
-| `v0.0.0` | 1 | `abcdef1` | no | `0.0.1-dev.1.abcdef1` |
-| `v0.0.1` | 1 | `abcdef1` | yes | `0.0.2-dev.1.abcdef1.dirty` |
+| `v0.0.0` | 1 | `abcdef1` | no | `0.0.1-alpha.1.abcdef1` |
+| `v0.0.1` | 1 | `abcdef1` | yes | `0.0.2-alpha.1.abcdef1.dirty` |
 
 ### `major` / `minor` / `patch` — Create Release Tag
 
@@ -113,21 +113,24 @@ Creates `.git-semver-release.properties` in the current directory with default v
 Customizable via `.git-semver-release.properties`:
 
 ```properties
+channel=alpha
 dirty_indicator=dirty
-pre_release_format=dev$separator$commit_count$separator$commit_short_sha$separator$dirty_indicator
+pre_release_format=$channel$separator$commit_count$separator$commit_short_sha$separator$dirty_indicator
 tag_prefix=v
 ```
 
 | Property | Default | Description |
 |-|-|-|
+| `channel` | `alpha` | Pre-release channel identifier (e.g. `alpha`, `beta`, `rc`) |
 | `dirty_indicator` | `dirty` | Appended to pre-release versions when the working tree has uncommitted changes |
-| `pre_release_format` | `dev$separator…` | Template for pre-release identifiers (see variables below) |
+| `pre_release_format` | `$channel$separator…` | Template for pre-release identifiers (see variables below) |
 | `tag_prefix` | `v` | Prefix for Git tags (e.g. `v` produces `v1.0.0`, empty produces `1.0.0`) |
 
 ### Variables
 
 | Variable | Replaced with |
 |-|-|
+| `$channel` | Value of `channel` property |
 | `$separator` | `.` (dot, hardcoded) |
 | `$commit_count` | Number of commits since the last release tag |
 | `$commit_short_sha` | Abbreviated SHA of the latest commit |
@@ -141,7 +144,7 @@ dirty_indicator=dirty
 pre_release_format=$branch$separator$commit_count$separator$commit_short_sha$separator$dirty_indicator
 ```
 
-This produces versions like `0.0.1-feature-login.3.abcdef0` instead of `0.0.1-dev.3.abcdef0`.
+This produces versions like `0.0.1-feature-login.3.abcdef0` instead of `0.0.1-alpha.3.abcdef0`.
 
 ## GitHub Action
 

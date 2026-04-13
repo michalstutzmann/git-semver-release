@@ -93,7 +93,7 @@ teardown() {
 
   run ./git-semver-release version
   assert_success
-  assert_output --regexp '^0\.0\.0-dev\.1\.[0-9a-f]{7}$'
+  assert_output --regexp '^0\.0\.0-alpha\.1\.[0-9a-f]{7}$'
 }
 
 @test "Create initial release" {
@@ -523,7 +523,8 @@ teardown() {
   assert_success
   run cat .git-semver-release.properties
   assert_output --partial 'dirty_indicator=dirty'
-  assert_output --partial 'pre_release_format=dev$separator$commit_count$separator$commit_short_sha$separator$dirty_indicator'
+  assert_output --partial 'channel=alpha'
+  assert_output --partial 'pre_release_format=$channel$separator$commit_count$separator$commit_short_sha$separator$dirty_indicator'
   assert_output --partial 'tag_prefix=v'
   refute_output --partial 'build_format'
   rm -f .git-semver-release.properties

@@ -263,8 +263,11 @@ main() {
       done < .git-semver-release.properties
   fi
 
+  local -r channel="${config["channel"]:-alpha}"
   local -r dirty_indicator="${config["dirty_indicator"]:-dirty}"
-  local -r pre_release_format="${config["pre_release_format"]:-dev\$separator\$commit_count\$separator\$commit_short_sha\$separator\$dirty_indicator}"
+  local pre_release_format="${config["pre_release_format"]:-\$channel\$separator\$commit_count\$separator\$commit_short_sha\$separator\$dirty_indicator}"
+  pre_release_format="${pre_release_format//\$channel/"$channel"}"
+  local -r pre_release_format
   local -r tag_prefix="${config["tag_prefix"]-v}"
 
   local push=0
@@ -284,7 +287,7 @@ main() {
 
   case "$mode" in
     create-config-file)
-      printf 'dirty_indicator=dirty\npre_release_format=dev$separator$commit_count$separator$commit_short_sha$separator$dirty_indicator\ntag_prefix=v\n' > \
+      printf 'channel=alpha\ndirty_indicator=dirty\npre_release_format=$channel$separator$commit_count$separator$commit_short_sha$separator$dirty_indicator\ntag_prefix=v\n' > \
         .git-semver-release.properties || return 3
       ;;
     version)
