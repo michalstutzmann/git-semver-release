@@ -559,6 +559,58 @@ teardown() {
   assert_stderr 'error: no releasable changes found'
 }
 
+@test "Dry run does not create tag for explicit release" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+
+  run --separate-stderr ./git-semver-release patch --dry-run
+  assert_success
+  assert_stderr 'Would release 0.0.1'
+
+  # Verify no tag was created
+  run git tag
+  assert_output ''
+}
+
+@test "Dry run does not create tag for conventional release" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create initial release tag
+  tag "v1.0.0"
+  # Create conventional commit
+  commit 'feat: new feature'
+
+  run --separate-stderr ./git-semver-release --dry-run
+  assert_success
+  assert_stderr 'Would release 1.1.0'
+
+  # Verify no new tag was created
+  run git tag
+  assert_output 'v1.0.0'
+}
+
+@test "Dry run does not push tag" {
+  # Initialize bare remote repository
+  env -u GIT_DIR -u GIT_WORK_TREE git init --bare tmp/remote
+  # Initialize Git repository
+  initialize
+  git remote add origin "$PWD/tmp/remote"
+  # Create initial commit
+  commit 'fix: initial fix'
+
+  run --separate-stderr ./git-semver-release patch --push --dry-run
+  assert_success
+  assert_stderr 'Would release 0.0.1'
+
+  # Verify no tag was pushed to remote
+  run env -u GIT_DIR -u GIT_WORK_TREE git -C tmp/remote tag
+  assert_output ''
+}
+
 @test "Use custom tag prefix from config" {
   # Initialize Git repository
   initialize

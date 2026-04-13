@@ -194,6 +194,7 @@ release() {
   local -r message="$4"
   local -r version_type="$5"
   local -r push="$6"
+  local -r dry_run="$7"
 
   local version
   version="$(version "$pre_release_format" "$dirty_indicator" "$tag_prefix" 'semver' "$version_type")"
@@ -203,6 +204,11 @@ release() {
   fi
 
   local -r tag="${tag_prefix}$version"
+
+  if (( dry_run )); then
+    printf 'Would release %s\n' "$version" 1>&2
+    return 0
+  fi
 
   if [[ -n $message ]]; then
     git tag --annotate "$tag" --message "${message//\$version/"$version"}"
@@ -223,6 +229,7 @@ conventional() {
   local -r tag_prefix="$3"
   local -r message="$4"
   local -r push="$5"
+  local -r dry_run="$6"
 
   local latest_tag
   latest_tag="$(get_latest_release_tag "$tag_prefix")"
@@ -235,7 +242,7 @@ conventional() {
     return 2
   fi
 
-  release "$pre_release_format" "$dirty_indicator" "$tag_prefix" "$message" "$version_type" "$push" || return 3
+  release "$pre_release_format" "$dirty_indicator" "$tag_prefix" "$message" "$version_type" "$push" "$dry_run" || return 3
 }
 
 main() {
@@ -261,10 +268,13 @@ main() {
   local -r tag_prefix="${config["tag_prefix"]-v}"
 
   local push=0
+  local dry_run=0
   local args=()
   for arg in "$@"; do
     if [[ $arg == '--push' ]]; then
       push=1
+    elif [[ $arg == '--dry-run' ]]; then
+      dry_run=1
     else
       args+=("$arg")
     fi
@@ -289,7 +299,7 @@ main() {
       fi
 
       local -r message="${args[1]}"
-      release "$pre_release_format" "$dirty_indicator" "$tag_prefix" "$message" "$mode" "$push" || return 6
+      release "$pre_release_format" "$dirty_indicator" "$tag_prefix" "$message" "$mode" "$push" "$dry_run" || return 6
       ;;
     *)
       if is_dirty; then
@@ -298,7 +308,7 @@ main() {
       fi
 
       local -r message="${args[0]}"
-      conventional "$pre_release_format" "$dirty_indicator" "$tag_prefix" "$message" "$push" || return 7
+      conventional "$pre_release_format" "$dirty_indicator" "$tag_prefix" "$message" "$push" "$dry_run" || return 7
       ;;
   esac
 }
