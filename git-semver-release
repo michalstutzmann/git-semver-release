@@ -234,9 +234,9 @@ main() {
       done < .git-semver-release.properties
   fi
 
+  local -r dirty_indicator="${config["dirty_indicator"]:-dirty}"
   local -r pre_release_format="${config["pre_release_format"]:-dev\$separator\$commit_count\$separator\$commit_short_sha\$separator\$dirty_indicator}"
   local -r build_format="${config["build_format"]}"
-  local -r dirty_indicator="${config["dirty_indicator"]:-dirty}"
 
   local -r mode="$1"
 
