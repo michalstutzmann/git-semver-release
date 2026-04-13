@@ -26,9 +26,22 @@ curl https://raw.githubusercontent.com/michalstutzmann/git-semver-release/refs/h
 
 ### Usage
 
+#### Manual
+
 ```shell
-git-semver-release version        # e.g. 0.0.1-alpha.3.abcdef0
-git-semver-release patch           # creates v0.0.1
+git-semver-release version    # E.g. 0.0.1-alpha.3.abcdef0
+git-semver-release patch      # Creates v0.0.1 tag
+git-semver-release minor      # Creates v0.1.0 tag
+git-semver-release major      # Creates v1.0.0 tag
+```
+
+#### Conventional Commits
+
+```shell
+git-semver-release version    # E.g. 0.0.1-alpha.3.abcdef0
+git-semver-release            # Creates v0.0.1 tag for fix:/perf: commits
+git-semver-release            # Creates v0.1.0 tag for feat: commits
+git-semver-release            # Creates v1.0.0 tag for breaking changes (!: or BREAKING CHANGE:)
 ```
 
 ## Prerequisites
