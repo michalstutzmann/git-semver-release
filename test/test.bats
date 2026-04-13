@@ -283,7 +283,7 @@ teardown() {
   # Create initial release tag
   tag "v0.0.0"
   # Create conventional commit
-  commit 'feat: feature\nBREAKING CHANGE: breaking change'
+  commit $'feat: feature\n\nBREAKING CHANGE: breaking change'
 
   run ./git-semver-release 'Release'
   assert_success
