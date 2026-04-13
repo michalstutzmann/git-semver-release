@@ -115,7 +115,7 @@ version() {
     elif [[ $version_type == 'minor' ]]; then
       ((minor_version++))
       patch_version='0'
-    elif [[ $version_type == 'patch' && -n $commit_count ]]; then
+    elif [[ $version_type == 'patch' ]]; then
       ((patch_version++))
     fi
   # Release does not exist but there are commits
@@ -248,7 +248,7 @@ main() {
     version)
        local -r output_format="$3"
 
-       version "$pre_release_format" "$build_format" "$dirty_indicator" "$output_format" 'patch' || return 4
+       version "$pre_release_format" "$build_format" "$dirty_indicator" "$output_format" || return 4
        ;;
     major | minor | patch)
       if is_dirty; then

@@ -93,7 +93,7 @@ teardown() {
 
   run ./git-semver-release version
   assert_success
-  assert_output --regexp '^0\.0\.1-dev\.1\.[0-9a-f]{7}$'
+  assert_output --regexp '^0\.0\.0-dev\.1\.[0-9a-f]{7}$'
 }
 
 @test "Create initial release" {
