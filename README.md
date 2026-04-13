@@ -8,19 +8,28 @@ A single Bash script that versions your project from Git tags using [Semantic Ve
 
 ## Quick Start
 
+### Homebrew
+
 ```shell
-# Install
+brew tap michalstutzmann/git-semver-release
+brew install git-semver-release
+```
+
+### Manual
+
+```shell
 curl https://raw.githubusercontent.com/michalstutzmann/git-semver-release/refs/heads/main/git-semver-release \
   --output ~/.local/bin/git-semver-release && chmod +x ~/.local/bin/git-semver-release
-
-# Get current pre-release version
-git-semver-release version        # e.g. 0.0.1-alpha.3.abcdef0
-
-# Create a release tag
-git-semver-release patch           # creates v0.0.1
 ```
 
 > Make sure `~/.local/bin` is in your `PATH`.
+
+### Usage
+
+```shell
+git-semver-release version        # e.g. 0.0.1-alpha.3.abcdef0
+git-semver-release patch           # creates v0.0.1
+```
 
 ## Prerequisites
 
