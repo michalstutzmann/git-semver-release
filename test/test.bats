@@ -460,6 +460,38 @@ teardown() {
   rm -f .git-semver-release.properties
 }
 
+@test "Non-conventional bang message does not trigger major bump" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create initial release tag
+  tag "v1.0.0"
+  # Create a non-conventional commit with bang
+  commit 'this is not conventional!: something'
+
+  run ./git-semver-release 'Release'
+  assert_success
+  run git tag --points-at HEAD
+  assert_output --regexp '^v1\.0\.1$'
+}
+
+@test "Message starting with feat prefix but not a conventional commit does not trigger minor bump" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create initial release tag
+  tag "v1.0.0"
+  # Create a commit that starts with 'feat' but is not a conventional commit
+  commit 'featuring: new stuff'
+
+  run ./git-semver-release 'Release'
+  assert_success
+  run git tag --points-at HEAD
+  assert_output --regexp '^v1\.0\.1$'
+}
+
 @test "Use custom dirty indicator from config" {
   # Initialize Git repository
   initialize

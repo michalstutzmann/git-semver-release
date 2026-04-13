@@ -58,10 +58,10 @@ get_bump_type_for_commits_since_tag() {
   for hash in $commit_hashes; do
     message="$(git log -1 --format=%B "$hash")"
 
-    if [[ $message =~ ^.+(\(.+\))?!:\ .+$ || $message =~ BREAKING\ CHANGE:\ .+ ]]; then
+    if [[ $message =~ ^[a-zA-Z]+(\(.+\))?!:\ .+$ || $message =~ BREAKING\ CHANGE:\ .+ ]]; then
       bump_type='major'
       break
-    elif [[ $message =~ ^feat(.+)?:\ .+$ ]]; then
+    elif [[ $message =~ ^feat(\(.+\))?:\ .+$ ]]; then
       bump_type='minor'
     fi
   done
