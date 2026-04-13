@@ -227,6 +227,18 @@ teardown() {
   assert_output --regexp '^0\.0\.1$'
 }
 
+@test "Create conventional commit release without previous tag" {
+  # Initialize Git repository
+  initialize
+  # Create conventional commit
+  commit 'feat: initial feature'
+
+  run ./git-semver-release 'Release'
+  assert_success
+  run git tag --points-at HEAD
+  assert_output --regexp '^v0\.1\.0$'
+}
+
 @test "Create patch release with conventional commit" {
   # Initialize Git repository
   initialize
@@ -259,6 +271,22 @@ teardown() {
   assert_output --regexp '^v0\.1\.0$'
 }
 
+@test "Create minor release with scoped conventional commit" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create initial release tag
+  tag "v0.0.0"
+  # Create scoped conventional commit
+  commit 'feat(auth): add login'
+
+  run ./git-semver-release 'Release'
+  assert_success
+  run git tag --points-at HEAD
+  assert_output --regexp '^v0\.1\.0$'
+}
+
 @test "Create major release with conventional commit using bang" {
   # Initialize Git repository
   initialize
@@ -268,6 +296,22 @@ teardown() {
   tag "v0.0.0"
   # Create conventional commit
   commit 'feat!: feature'
+
+  run ./git-semver-release 'Release'
+  assert_success
+  run git tag --points-at HEAD
+  assert_output --regexp '^v1\.0\.0$'
+}
+
+@test "Create major release with scoped conventional commit using bang" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create initial release tag
+  tag "v0.0.0"
+  # Create scoped conventional commit with bang
+  commit 'refactor(api)!: redesign endpoints'
 
   run ./git-semver-release 'Release'
   assert_success
@@ -327,6 +371,35 @@ teardown() {
   assert_output --regexp '^v1\.0\.0$'
 }
 
+@test "Expand version placeholder in tag message" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+
+  run ./git-semver-release patch 'Release $version'
+  assert_success
+  run git tag -n1 --points-at HEAD
+  assert_output --regexp 'Release 0\.0\.1'
+}
+
+@test "Detect dirty tree with commits beyond tag" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create release tag
+  tag "v1.0.0"
+  # Create another commit
+  commit 'Second'
+  # Create an untracked file
+  printf 'untracked' > tmp/untracked
+
+  run ./git-semver-release version
+  assert_success
+  assert_output --regexp '\.dirty$'
+}
+
 @test "Scan all commits since last tag: earlier feat wins over latest fix" {
   # Initialize Git repository
   initialize
@@ -342,6 +415,36 @@ teardown() {
   assert_success
   run git tag --points-at HEAD
   assert_output --regexp '^v1\.1\.0$'
+}
+
+@test "Create config file" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+
+  run ./git-semver-release create-config-file
+  assert_success
+  run cat .git-semver-release.properties
+  assert_output --partial 'dirty_indicator=dirty'
+  assert_output --partial 'pre_release_format=dev$separator$commit_count$separator$commit_short_sha$separator$dirty_indicator'
+  rm -f .git-semver-release.properties
+}
+
+@test "Use custom dirty indicator from config" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create custom config
+  printf 'dirty_indicator=modified\n' > .git-semver-release.properties
+  # Create an untracked file
+  printf 'untracked' > tmp/untracked
+
+  run ./git-semver-release version
+  assert_success
+  assert_output --regexp '\.modified$'
+  rm -f .git-semver-release.properties
 }
 
 initialize() {
