@@ -184,6 +184,7 @@ release() {
   local -r dirty_indicator="$2"
   local -r message="$3"
   local -r version_type="$4"
+  local -r push="$5"
 
   local version
   version="$(version "$pre_release_format" "$dirty_indicator" 'semver' "$version_type")"
@@ -200,13 +201,18 @@ release() {
     git tag --annotate "$tag" --message "Release $version"
   fi
 
-  printf '%s' "$version"
+  printf 'Released %s\n' "$version" 1>&2
+
+  if (( push )); then
+    git push origin "$tag" || return 1
+  fi
 }
 
 conventional() {
   local -r pre_release_format="$1"
   local -r dirty_indicator="$2"
   local -r message="$3"
+  local -r push="$4"
 
   local latest_tag
   latest_tag="$(get_latest_release_tag)"
@@ -219,7 +225,7 @@ conventional() {
     return 8
   fi
 
-  release "$pre_release_format" "$dirty_indicator" "$message" "$version_type" || return 2
+  release "$pre_release_format" "$dirty_indicator" "$message" "$version_type" "$push" || return 2
 }
 
 main() {
@@ -243,7 +249,17 @@ main() {
   local -r dirty_indicator="${config["dirty_indicator"]:-dirty}"
   local -r pre_release_format="${config["pre_release_format"]:-dev\$separator\$commit_count\$separator\$commit_short_sha\$separator\$dirty_indicator}"
 
-  local -r mode="$1"
+  local push=0
+  local args=()
+  for arg in "$@"; do
+    if [[ $arg == '--push' ]]; then
+      push=1
+    else
+      args+=("$arg")
+    fi
+  done
+
+  local -r mode="${args[0]}"
 
   case "$mode" in
     create-config-file)
@@ -251,7 +267,7 @@ main() {
         .git-semver-release.properties || return 3
       ;;
     version)
-       local -r output_format="$3"
+       local -r output_format="${args[2]}"
 
        version "$pre_release_format" "$dirty_indicator" "$output_format" || return 4
        ;;
@@ -261,8 +277,8 @@ main() {
         return 5
       fi
 
-      local -r message="$2"
-      release "$pre_release_format" "$dirty_indicator" "$message" "$mode" || return 6
+      local -r message="${args[1]}"
+      release "$pre_release_format" "$dirty_indicator" "$message" "$mode" "$push" || return 6
       ;;
     *)
       if is_dirty; then
@@ -270,8 +286,8 @@ main() {
         return 5
       fi
 
-      local -r message="$1"
-      conventional "$pre_release_format" "$dirty_indicator" "$message"
+      local -r message="${args[0]}"
+      conventional "$pre_release_format" "$dirty_indicator" "$message" "$push"
       local -r conventional_exit=$?
       if [[ $conventional_exit -ne 0 ]]; then
         return "$conventional_exit"

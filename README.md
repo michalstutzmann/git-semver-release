@@ -47,12 +47,14 @@ Returns the current version **without creating a tag**. If HEAD is on a release 
 ### `major` / `minor` / `patch` — Create Release Tag
 
 ```shell
-git-semver-release (major|minor|patch) [MESSAGE]
+git-semver-release (major|minor|patch) [--push] [MESSAGE]
 ```
 
 Creates an annotated Git tag `vMAJOR.MINOR.PATCH`. Fails if there are uncommitted changes.
 
 The optional `MESSAGE` becomes the tag annotation. Use `$version` as a placeholder for the calculated version number (e.g. `"Release $version"`).
+
+Pass `--push` to push the created tag to the `origin` remote.
 
 **Patch** bumps the third number:
 
@@ -73,7 +75,7 @@ The optional `MESSAGE` becomes the tag annotation. Use `$version` as a placehold
 ### *(default)* — Release Using Conventional Commits
 
 ```shell
-git-semver-release [MESSAGE]
+git-semver-release [--push] [MESSAGE]
 ```
 
 When called without `major`, `minor`, or `patch`, the bump type is determined from **all commit messages since the last release** following [Conventional Commits](https://www.conventionalcommits.org/). The highest bump type wins (major > minor > patch). Optional scopes (e.g. `feat(auth):`) are supported. If no commits match a releasable type, the release is skipped with exit code 8.

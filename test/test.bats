@@ -102,9 +102,9 @@ teardown() {
   # Create initial commit
   commit 'fix: initial fix'
 
-  run ./git-semver-release 'Initial'
+  run --separate-stderr ./git-semver-release 'Initial'
   assert_success
-  assert_output '0.0.1'
+  assert_stderr 'Released 0.0.1'
 
   run git tag --points-at HEAD
   assert_output --regexp '^v0\.0\.1$'
@@ -131,9 +131,9 @@ teardown() {
   # Create initial commit
   commit 'Initial'
 
-  run ./git-semver-release patch 'Release'
+  run --separate-stderr ./git-semver-release patch 'Release'
   assert_success
-  assert_output '0.0.1'
+  assert_stderr 'Released 0.0.1'
   run git tag --points-at HEAD
   assert_output --regexp '^v0\.0\.1$'
 }
@@ -449,6 +449,24 @@ teardown() {
   assert_success
   run git tag --points-at HEAD
   assert_output --regexp '^v1\.0\.1$'
+}
+
+@test "Push tag to remote with --push flag" {
+  # Initialize bare remote repository
+  env -u GIT_DIR -u GIT_WORK_TREE git init --bare tmp/remote
+  # Initialize Git repository
+  initialize
+  git remote add origin "$PWD/tmp/remote"
+  # Create initial commit
+  commit 'fix: initial fix'
+
+  run --separate-stderr ./git-semver-release patch --push
+  assert_success
+  assert_stderr --partial 'Released 0.0.1'
+
+  # Verify tag was pushed to remote
+  run env -u GIT_DIR -u GIT_WORK_TREE git -C tmp/remote tag
+  assert_output 'v0.0.1'
 }
 
 @test "Skip release when all commits are non-releasable" {
