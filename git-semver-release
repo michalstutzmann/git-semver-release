@@ -197,6 +197,8 @@ release() {
   else
     git tag --annotate "$tag" --message "Release $version"
   fi
+
+  printf '%s' "$version"
 }
 
 conventional() {

@@ -104,6 +104,7 @@ teardown() {
 
   run ./git-semver-release 'Initial'
   assert_success
+  assert_output '0.0.1'
 
   run git tag --points-at HEAD
   assert_output --regexp '^v0\.0\.1$'
@@ -132,6 +133,7 @@ teardown() {
 
   run ./git-semver-release patch 'Release'
   assert_success
+  assert_output '0.0.1'
   run git tag --points-at HEAD
   assert_output --regexp '^v0\.0\.1$'
 }
