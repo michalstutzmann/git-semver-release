@@ -151,13 +151,13 @@ version() {
     if is_dirty; then
       pre_release="${pre_release//\$dirty_indicator/"$dirty_indicator"}"
     else
-      pre_release="${pre_release//\$dirty_indicator/''}"
+      pre_release="${pre_release//\$dirty_indicator/}"
     fi
   else
     pre_release="$pre_release_format"
     pre_release="${pre_release//\$branch/"$(get_git_branch)"}"
-    pre_release="${pre_release//\$commit_count/''}"
-    pre_release="${pre_release//\$commit_short_sha/''}"
+    pre_release="${pre_release//\$commit_count/}"
+    pre_release="${pre_release//\$commit_short_sha/}"
 
     if is_dirty; then
       pre_release="${pre_release//\$dirty_indicator/"$dirty_indicator"}"
@@ -166,7 +166,7 @@ version() {
     fi
   fi
 
-  pre_release="${pre_release//\$separator/'.'}"
+  pre_release="${pre_release//\$separator/.}"
   pre_release="$(printf '%s' "$pre_release" | tr -s '.')"
   pre_release="${pre_release%.}"
   pre_release="${pre_release#.}"
