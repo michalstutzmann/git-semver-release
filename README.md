@@ -162,7 +162,7 @@ This produces versions like `0.0.1-feature-login.3.abcdef0` instead of `0.0.1-de
 |-|-|
 | `version` | The calculated or released version string |
 
-> **Important:** Use `fetch-depth: 0` on `actions/checkout` so the tool can access all tags and commit history.
+> **Important:** Use `fetch-depth: 0`, `fetch-tags: true` and `ref: ${{ github.ref }}` on `actions/checkout` so the tool can access all tags and commit history.
 
 ### Examples
 
@@ -172,6 +172,8 @@ Get current development version:
 - uses: actions/checkout@v4
   with:
     fetch-depth: 0
+    fetch-tags: true
+    ref: ${{ github.ref }}
 - uses: michalstutzmann/git-semver-release@v1
   id: semver
   with:
@@ -185,6 +187,8 @@ Create a release tag using conventional commits:
 - uses: actions/checkout@v4
   with:
     fetch-depth: 0
+    fetch-tags: true
+    ref: ${{ github.ref }}
 - uses: michalstutzmann/git-semver-release@v1
   id: semver
   with:
@@ -198,6 +202,8 @@ Create a release tag with explicit bump type:
 - uses: actions/checkout@v4
   with:
     fetch-depth: 0
+    fetch-tags: true
+    ref: ${{ github.ref }}
 - uses: michalstutzmann/git-semver-release@v1
   id: semver
   with:
@@ -237,6 +243,8 @@ docker build --push --tag "myregistry/myimage:$(git-semver-release version)" .
 - uses: actions/checkout@v4
   with:
     fetch-depth: 0
+    fetch-tags: true
+    ref: ${{ github.ref }}
 - uses: michalstutzmann/git-semver-release@v1
   id: semver
   with:
