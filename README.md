@@ -35,14 +35,14 @@ git-semver-release patch           # creates v0.0.1
 git-semver-release version
 ```
 
-Returns the current version **without creating a tag**. If HEAD is on a release tag, it returns that version exactly. Otherwise, it increments PATCH and appends pre-release metadata in the SemVer format `MAJOR.MINOR.PATCH-PRE_RELEASE`.
+Returns the current version **without creating a tag**. If HEAD is on a release tag, it returns that version exactly. Otherwise, it appends pre-release metadata in the SemVer format `MAJOR.MINOR.PATCH-PRE_RELEASE`.
 
 | Latest release tag | Commits since release | Short SHA | Uncommitted changes | Output |
 |-|-|-|-|-|
-| *(none)* | 1 | `abcdef0` | no | `0.0.1-dev.1.abcdef0` |
+| *(none)* | 1 | `abcdef0` | no | `0.0.0-dev.1.abcdef0` |
 | `v0.0.0` | 0 | `abcdef0` | no | `0.0.0` |
-| `v0.0.0` | 1 | `abcdef1` | no | `0.0.1-dev.1.abcdef1` |
-| `v0.0.1` | 1 | `abcdef1` | yes | `0.0.2-dev.1.abcdef1.dirty` |
+| `v0.0.0` | 1 | `abcdef1` | no | `0.0.0-dev.1.abcdef1` |
+| `v0.0.1` | 1 | `abcdef1` | yes | `0.0.1-dev.1.abcdef1.dirty` |
 
 ### `major` / `minor` / `patch` — Create Release Tag
 
