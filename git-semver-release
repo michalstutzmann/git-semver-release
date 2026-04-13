@@ -197,7 +197,7 @@ release() {
   if [[ -n $message ]]; then
     git tag --annotate "$tag" --message "${message//\$version/"$version"}"
   else
-    git tag --annotate "$tag"
+    git tag --annotate "$tag" --message "Release version $version"
   fi
 }
 
