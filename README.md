@@ -111,7 +111,6 @@ The pre-release format is customizable via `.git-semver-release.properties`:
 ```properties
 dirty_indicator=dirty
 pre_release_format=dev$separator$commit_count$separator$commit_short_sha$separator$dirty_indicator
-build_format=
 ```
 
 ### Variables
@@ -129,7 +128,6 @@ build_format=
 ```properties
 dirty_indicator=dirty
 pre_release_format=$branch$separator$commit_count$separator$commit_short_sha$separator$dirty_indicator
-build_format=
 ```
 
 This produces versions like `0.0.1-feature-login.3.abcdef0` instead of `0.0.1-dev.3.abcdef0`.

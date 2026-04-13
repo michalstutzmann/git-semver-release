@@ -457,6 +457,7 @@ teardown() {
   run cat .git-semver-release.properties
   assert_output --partial 'dirty_indicator=dirty'
   assert_output --partial 'pre_release_format=dev$separator$commit_count$separator$commit_short_sha$separator$dirty_indicator'
+  refute_output --partial 'build_format'
   rm -f .git-semver-release.properties
 }
 

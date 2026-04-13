@@ -79,10 +79,9 @@ get_latest_tag_for_commit_pointed_by_tag() {
 
 version() {
   local -r pre_release_format="$1"
-  local -r build_format="$2"
-  local -r dirty_indicator="$3"
-  local -r output_format="$4"
-  local -r version_type="$5"
+  local -r dirty_indicator="$2"
+  local -r output_format="$3"
+  local -r version_type="$4"
 
   local git_describe_output
   git_describe_output="$(get_describe_output)"
@@ -180,13 +179,12 @@ version() {
 
 release() {
   local -r pre_release_format="$1"
-  local -r build_format="$2"
-  local -r dirty_indicator="$3"
-  local -r message="$4"
-  local -r version_type="$5"
+  local -r dirty_indicator="$2"
+  local -r message="$3"
+  local -r version_type="$4"
 
   local version
-  version="$(version "$pre_release_format" "$build_format" "$dirty_indicator" 'semver' "$version_type")"
+  version="$(version "$pre_release_format" "$dirty_indicator" 'semver' "$version_type")"
 
   if [[ $version =~ ^([0-9]+\.[0-9]+\.[0-9]+).*$ ]]; then
       version="${BASH_REMATCH[1]}"
@@ -203,9 +201,8 @@ release() {
 
 conventional() {
   local -r pre_release_format="$1"
-  local -r build_format="$2"
-  local -r dirty_indicator="$3"
-  local -r message="$4"
+  local -r dirty_indicator="$2"
+  local -r message="$3"
 
   local latest_tag
   latest_tag="$(get_latest_release_tag)"
@@ -213,7 +210,7 @@ conventional() {
   local version_type
   version_type="$(get_bump_type_for_commits_since_tag "$latest_tag")" || return 1
 
-  release "$pre_release_format" "$build_format" "$dirty_indicator" "$message" "$version_type" || return 2
+  release "$pre_release_format" "$dirty_indicator" "$message" "$version_type" || return 2
 }
 
 main() {
@@ -236,19 +233,18 @@ main() {
 
   local -r dirty_indicator="${config["dirty_indicator"]:-dirty}"
   local -r pre_release_format="${config["pre_release_format"]:-dev\$separator\$commit_count\$separator\$commit_short_sha\$separator\$dirty_indicator}"
-  local -r build_format="${config["build_format"]}"
 
   local -r mode="$1"
 
   case "$mode" in
     create-config-file)
-      printf 'dirty_indicator=dirty\npre_release_format=dev$separator$commit_count$separator$commit_short_sha$separator$dirty_indicator\nbuild_format=\n' > \
+      printf 'dirty_indicator=dirty\npre_release_format=dev$separator$commit_count$separator$commit_short_sha$separator$dirty_indicator\n' > \
         .git-semver-release.properties || return 3
       ;;
     version)
        local -r output_format="$3"
 
-       version "$pre_release_format" "$build_format" "$dirty_indicator" "$output_format" || return 4
+       version "$pre_release_format" "$dirty_indicator" "$output_format" || return 4
        ;;
     major | minor | patch)
       if is_dirty; then
@@ -257,7 +253,7 @@ main() {
       fi
 
       local -r message="$2"
-      release "$pre_release_format" "$build_format" "$dirty_indicator" "$message" "$mode" || return 6
+      release "$pre_release_format" "$dirty_indicator" "$message" "$mode" || return 6
       ;;
     *)
       if is_dirty; then
@@ -266,7 +262,7 @@ main() {
       fi
 
       local -r message="$1"
-      conventional "$pre_release_format" "$build_format" "$dirty_indicator" "$message" || return 7
+      conventional "$pre_release_format" "$dirty_indicator" "$message" || return 7
       ;;
   esac
 }
