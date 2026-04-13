@@ -417,6 +417,35 @@ teardown() {
   assert_output --regexp '^v1\.1\.0$'
 }
 
+@test "Auto-bump patch when commits exist beyond tag" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create initial release tag
+  tag "v1.0.0"
+  # Create another commit
+  commit 'Second'
+
+  run ./git-semver-release 'Release'
+  assert_success
+  run git tag --points-at HEAD
+  assert_output --regexp '^v1\.0\.1$'
+}
+
+@test "No patch bump when HEAD is at the latest tag" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create release tag
+  tag "v1.0.0"
+
+  run ./git-semver-release version
+  assert_success
+  assert_output --regexp '^1\.0\.0$'
+}
+
 @test "Create config file" {
   # Initialize Git repository
   initialize

@@ -114,8 +114,8 @@ version() {
       patch_version='0'
     elif [[ $version_type == 'minor' ]]; then
       ((minor_version++))
-      patch_version='0'
-    elif [[ $version_type == 'patch' ]]; then
+      patch_version='0'    
+    elif [[ $commit_count -gt 0 ]]; then
       ((patch_version++))
     fi
   # Release does not exist but there are commits
