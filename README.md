@@ -41,8 +41,8 @@ Returns the current version **without creating a tag**. If HEAD is on a release 
 |-|-|-|-|-|
 | *(none)* | 1 | `abcdef0` | no | `0.0.0-dev.1.abcdef0` |
 | `v0.0.0` | 0 | `abcdef0` | no | `0.0.0` |
-| `v0.0.0` | 1 | `abcdef1` | no | `0.0.0-dev.1.abcdef1` |
-| `v0.0.1` | 1 | `abcdef1` | yes | `0.0.1-dev.1.abcdef1.dirty` |
+| `v0.0.0` | 1 | `abcdef1` | no | `0.0.1-dev.1.abcdef1` |
+| `v0.0.1` | 1 | `abcdef1` | yes | `0.0.2-dev.1.abcdef1.dirty` |
 
 ### `major` / `minor` / `patch` — Create Release Tag
 
@@ -78,7 +78,7 @@ Pass `--push` to push the created tag to the `origin` remote.
 git-semver-release [--push] [MESSAGE]
 ```
 
-When called without `major`, `minor`, or `patch`, the bump type is determined from **all commit messages since the last release** following [Conventional Commits](https://www.conventionalcommits.org/). The highest bump type wins (major > minor > patch). Optional scopes (e.g. `feat(auth):`) are supported. If no commits match a releasable type, the release is skipped with exit code 8.
+When called without `major`, `minor`, or `patch`, the bump type is determined from **all commit messages since the last release** following [Conventional Commits](https://www.conventionalcommits.org/). The highest bump type wins (major > minor > patch). Optional scopes (e.g. `feat(auth):`) are supported. If no commits match a releasable type, the release is skipped with exit code 7.
 
 | Commit message pattern | Bump type | Example |
 |-|-|-|
@@ -110,12 +110,19 @@ Creates `.git-semver-release.properties` in the current directory with default v
 
 ## Configuration
 
-The pre-release format is customizable via `.git-semver-release.properties`:
+Customizable via `.git-semver-release.properties`:
 
 ```properties
 dirty_indicator=dirty
 pre_release_format=dev$separator$commit_count$separator$commit_short_sha$separator$dirty_indicator
+tag_prefix=v
 ```
+
+| Property | Default | Description |
+|-|-|-|
+| `dirty_indicator` | `dirty` | Appended to pre-release versions when the working tree has uncommitted changes |
+| `pre_release_format` | `dev$separator…` | Template for pre-release identifiers (see variables below) |
+| `tag_prefix` | `v` | Prefix for Git tags (e.g. `v` produces `v1.0.0`, empty produces `1.0.0`) |
 
 ### Variables
 
@@ -123,7 +130,7 @@ pre_release_format=dev$separator$commit_count$separator$commit_short_sha$separat
 |-|-|
 | `$separator` | `.` (dot, hardcoded) |
 | `$commit_count` | Number of commits since the last release tag |
-| `$commit_short_sha` | 7-character SHA of the latest commit |
+| `$commit_short_sha` | Abbreviated SHA of the latest commit |
 | `$dirty_indicator` | Value of `dirty_indicator` if there are uncommitted changes, empty otherwise |
 | `$branch` | Current Git branch name |
 
@@ -136,40 +143,17 @@ pre_release_format=$branch$separator$commit_count$separator$commit_short_sha$sep
 
 This produces versions like `0.0.1-feature-login.3.abcdef0` instead of `0.0.1-dev.3.abcdef0`.
 
-## Exit Codes
-
-| Code | Meaning |
-|-|-|
-| 0 | Success |
-| 1 | Not a Git repository |
-| 2 | No commits in the repository |
-| 3 | Failed to create config file |
-| 4 | Failed to calculate version |
-| 5 | Uncommitted changes (release commands only) |
-| 6 | Failed to create release tag (explicit bump) |
-| 7 | Failed to create release tag (conventional commits) |
-| 8 | No releasable changes (conventional commits only) |
-
 ## GitHub Action
-
-### Inputs
-
-| Input | Description | Required | Default |
-|-|-|-|-|
-| `command` | `version`, `major`, `minor`, `patch`, or `''` for conventional commits | no | `version` |
-| `message` | Tag annotation (supports `$version` placeholder) | no | |
 
 ### Outputs
 
 | Output | Description |
 |-|-|
-| `version` | The calculated or released version string |
+| `version` | The calculated pre-release version |
 
 > **Important:** Use `fetch-depth: 0`, `fetch-tags: true` and `ref: ${{ github.ref }}` on `actions/checkout` so the tool can access all tags and commit history.
 
-### Examples
-
-Get current development version:
+### Example
 
 ```yaml
 - uses: actions/checkout@v4
@@ -179,39 +163,7 @@ Get current development version:
     ref: ${{ github.ref }}
 - uses: michalstutzmann/git-semver-release@v1
   id: semver
-  with:
-    command: version
 - run: echo "${{ steps.semver.outputs.version }}"
-```
-
-Create a release tag using conventional commits:
-
-```yaml
-- uses: actions/checkout@v4
-  with:
-    fetch-depth: 0
-    fetch-tags: true
-    ref: ${{ github.ref }}
-- uses: michalstutzmann/git-semver-release@v1
-  id: semver
-  with:
-    command: ''
-    message: 'Release $version'
-```
-
-Create a release tag with explicit bump type:
-
-```yaml
-- uses: actions/checkout@v4
-  with:
-    fetch-depth: 0
-    fetch-tags: true
-    ref: ${{ github.ref }}
-- uses: michalstutzmann/git-semver-release@v1
-  id: semver
-  with:
-    command: patch
-    message: 'Release $version'
 ```
 
 ## CI Examples
@@ -250,8 +202,6 @@ docker build --push --tag "myregistry/myimage:$(git-semver-release version)" .
     ref: ${{ github.ref }}
 - uses: michalstutzmann/git-semver-release@v1
   id: semver
-  with:
-    command: version
 - run: docker build --push --tag "myregistry/myimage:${{ steps.semver.outputs.version }}" .
 ```
 

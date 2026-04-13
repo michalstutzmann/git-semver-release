@@ -17,7 +17,9 @@ has_commits() {
 }
 
 get_describe_output() {
-  git describe --always --match 'v*' 2> /dev/null || {
+  local -r tag_prefix="$1"
+
+  git describe --always --match "${tag_prefix}*" 2> /dev/null || {
    printf ''
   }
 }
@@ -39,7 +41,9 @@ is_dirty() {
 }
 
 get_latest_release_tag() {
-  git describe --abbrev=0 --match 'v[0-9]*.[0-9]*.[0-9]*' 2>/dev/null || printf ''
+  local -r tag_prefix="$1"
+
+  git describe --abbrev=0 --match "${tag_prefix}[0-9]*.[0-9]*.[0-9]*" 2>/dev/null || printf ''
 }
 
 get_bump_type_for_commits_since_tag() {
@@ -82,11 +86,12 @@ get_latest_tag_for_commit_pointed_by_tag() {
 version() {
   local -r pre_release_format="$1"
   local -r dirty_indicator="$2"
-  local -r output_format="$3"
-  local -r version_type="$4"
+  local -r tag_prefix="$3"
+  local -r output_format="$4"
+  local -r version_type="$5"
 
   local git_describe_output
-  git_describe_output="$(get_describe_output)"
+  git_describe_output="$(get_describe_output "$tag_prefix")"
 
   local major_version
   local minor_version
@@ -95,7 +100,10 @@ version() {
   local commit_short_sha
 
   # Release exists with possible additional commits
-  if [[ "$git_describe_output" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)(-([0-9]+))?(-g([a-f0-9]{7,}))?$ ]]; then
+  local -r describe_pattern="^${tag_prefix}([0-9]+)\.([0-9]+)\.([0-9]+)(-([0-9]+))?(-g([a-f0-9]{7,}))?$"
+  local -r tag_pattern="^${tag_prefix}([0-9]+)\.([0-9]+)\.([0-9]+)$"
+
+  if [[ "$git_describe_output" =~ $describe_pattern ]]; then
     major_version="${BASH_REMATCH[1]}"
     minor_version="${BASH_REMATCH[2]}"
     patch_version="${BASH_REMATCH[3]}"
@@ -103,7 +111,7 @@ version() {
     commit_short_sha="${BASH_REMATCH[7]}"
 
     # If two releases point to the same commit take the latest one
-    if [[ "$(get_latest_tag_for_commit_pointed_by_tag "v$major_version.$minor_version.$patch_version")" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+    if [[ "$(get_latest_tag_for_commit_pointed_by_tag "${tag_prefix}$major_version.$minor_version.$patch_version")" =~ $tag_pattern ]]; then
       major_version="${BASH_REMATCH[1]}"
       minor_version="${BASH_REMATCH[2]}"
       patch_version="${BASH_REMATCH[3]}"
@@ -182,18 +190,19 @@ version() {
 release() {
   local -r pre_release_format="$1"
   local -r dirty_indicator="$2"
-  local -r message="$3"
-  local -r version_type="$4"
-  local -r push="$5"
+  local -r tag_prefix="$3"
+  local -r message="$4"
+  local -r version_type="$5"
+  local -r push="$6"
 
   local version
-  version="$(version "$pre_release_format" "$dirty_indicator" 'semver' "$version_type")"
+  version="$(version "$pre_release_format" "$dirty_indicator" "$tag_prefix" 'semver' "$version_type")"
 
   if [[ $version =~ ^([0-9]+\.[0-9]+\.[0-9]+).*$ ]]; then
       version="${BASH_REMATCH[1]}"
   fi
 
-  local -r tag="v$version"
+  local -r tag="${tag_prefix}$version"
 
   if [[ -n $message ]]; then
     git tag --annotate "$tag" --message "${message//\$version/"$version"}"
@@ -211,21 +220,22 @@ release() {
 conventional() {
   local -r pre_release_format="$1"
   local -r dirty_indicator="$2"
-  local -r message="$3"
-  local -r push="$4"
+  local -r tag_prefix="$3"
+  local -r message="$4"
+  local -r push="$5"
 
   local latest_tag
-  latest_tag="$(get_latest_release_tag)"
+  latest_tag="$(get_latest_release_tag "$tag_prefix")"
 
   local version_type
   version_type="$(get_bump_type_for_commits_since_tag "$latest_tag")" || return 1
 
   if [[ -z $version_type ]]; then
-    printf 'no releasable changes' 1>&2
-    return 8
+    printf 'error: no releasable changes found' 1>&2
+    return 2
   fi
 
-  release "$pre_release_format" "$dirty_indicator" "$message" "$version_type" "$push" || return 2
+  release "$pre_release_format" "$dirty_indicator" "$tag_prefix" "$message" "$version_type" "$push" || return 3
 }
 
 main() {
@@ -248,6 +258,7 @@ main() {
 
   local -r dirty_indicator="${config["dirty_indicator"]:-dirty}"
   local -r pre_release_format="${config["pre_release_format"]:-dev\$separator\$commit_count\$separator\$commit_short_sha\$separator\$dirty_indicator}"
+  local -r tag_prefix="${config["tag_prefix"]-v}"
 
   local push=0
   local args=()
@@ -263,13 +274,13 @@ main() {
 
   case "$mode" in
     create-config-file)
-      printf 'dirty_indicator=dirty\npre_release_format=dev$separator$commit_count$separator$commit_short_sha$separator$dirty_indicator\n' > \
+      printf 'dirty_indicator=dirty\npre_release_format=dev$separator$commit_count$separator$commit_short_sha$separator$dirty_indicator\ntag_prefix=v\n' > \
         .git-semver-release.properties || return 3
       ;;
     version)
        local -r output_format="${args[2]}"
 
-       version "$pre_release_format" "$dirty_indicator" "$output_format" || return 4
+       version "$pre_release_format" "$dirty_indicator" "$tag_prefix" "$output_format" || return 4
        ;;
     major | minor | patch)
       if is_dirty; then
@@ -278,7 +289,7 @@ main() {
       fi
 
       local -r message="${args[1]}"
-      release "$pre_release_format" "$dirty_indicator" "$message" "$mode" "$push" || return 6
+      release "$pre_release_format" "$dirty_indicator" "$tag_prefix" "$message" "$mode" "$push" || return 6
       ;;
     *)
       if is_dirty; then
@@ -287,11 +298,7 @@ main() {
       fi
 
       local -r message="${args[0]}"
-      conventional "$pre_release_format" "$dirty_indicator" "$message" "$push"
-      local -r conventional_exit=$?
-      if [[ $conventional_exit -ne 0 ]]; then
-        return "$conventional_exit"
-      fi
+      conventional "$pre_release_format" "$dirty_indicator" "$tag_prefix" "$message" "$push" || return 7
       ;;
   esac
 }

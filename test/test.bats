@@ -481,8 +481,8 @@ teardown() {
   commit 'docs: update readme'
 
   run --separate-stderr ./git-semver-release
-  assert_failure 8
-  assert_stderr 'no releasable changes'
+  assert_failure 7
+  assert_stderr 'error: no releasable changes found'
 }
 
 @test "Skip release for non-conventional commits" {
@@ -496,8 +496,8 @@ teardown() {
   commit 'update something'
 
   run --separate-stderr ./git-semver-release
-  assert_failure 8
-  assert_stderr 'no releasable changes'
+  assert_failure 7
+  assert_stderr 'error: no releasable changes found'
 }
 
 @test "No patch bump when HEAD is at the latest tag" {
@@ -524,6 +524,7 @@ teardown() {
   run cat .git-semver-release.properties
   assert_output --partial 'dirty_indicator=dirty'
   assert_output --partial 'pre_release_format=dev$separator$commit_count$separator$commit_short_sha$separator$dirty_indicator'
+  assert_output --partial 'tag_prefix=v'
   refute_output --partial 'build_format'
   rm -f .git-semver-release.properties
 }
@@ -539,8 +540,8 @@ teardown() {
   commit 'this is not conventional!: something'
 
   run --separate-stderr ./git-semver-release
-  assert_failure 8
-  assert_stderr 'no releasable changes'
+  assert_failure 7
+  assert_stderr 'error: no releasable changes found'
 }
 
 @test "Message starting with feat prefix but not a conventional commit does not trigger minor bump" {
@@ -554,8 +555,28 @@ teardown() {
   commit 'featuring: new stuff'
 
   run --separate-stderr ./git-semver-release
-  assert_failure 8
-  assert_stderr 'no releasable changes'
+  assert_failure 7
+  assert_stderr 'error: no releasable changes found'
+}
+
+@test "Use custom tag prefix from config" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create custom config with empty prefix
+  printf 'tag_prefix=\n' > .git-semver-release.properties
+  # Create release tag without prefix
+  tag "1.0.0"
+  # Create another commit
+  commit 'fix: bug fix'
+
+  run --separate-stderr ./git-semver-release
+  assert_success
+  assert_stderr 'Released 1.0.1'
+  run git tag --points-at HEAD
+  assert_output --regexp '^1\.0\.1$'
+  rm -f .git-semver-release.properties
 }
 
 @test "Use custom dirty indicator from config" {
