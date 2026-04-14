@@ -154,7 +154,10 @@ version() {
 
   if [[ -n $commit_count ]]; then
     pre_release="$pre_release_format"
-    pre_release="${pre_release//\$branch/"$(get_git_branch)"}"
+    local branch
+    branch="$(get_git_branch)"
+    branch="${branch//[^0-9A-Za-z-]/-}"
+    pre_release="${pre_release//\$branch/"$branch"}"
     pre_release="${pre_release//\$commit_count/"$commit_count"}"
     pre_release="${pre_release//\$commit_short_sha/"$commit_short_sha"}"
 
@@ -165,7 +168,10 @@ version() {
     fi
   else
     pre_release="$pre_release_format"
-    pre_release="${pre_release//\$branch/"$(get_git_branch)"}"
+    local branch
+    branch="$(get_git_branch)"
+    branch="${branch//[^0-9A-Za-z-]/-}"
+    pre_release="${pre_release//\$branch/"$branch"}"
     pre_release="${pre_release//\$commit_count/}"
     pre_release="${pre_release//\$commit_short_sha/}"
 

@@ -157,7 +157,7 @@ tag_prefix=v
 | `$commit_count` | Number of commits since the last release tag |
 | `$commit_short_sha` | Abbreviated SHA of the latest commit |
 | `$dirty_indicator` | Value of `dirty_indicator` if there are uncommitted changes, empty otherwise |
-| `$branch` | Current Git branch name |
+| `$branch` | Current Git branch name (characters outside `[0-9A-Za-z-]` are replaced with `-`) |
 
 ### Example: Branch-Based Pre-Release
 
