@@ -648,6 +648,112 @@ teardown() {
   rm -f .git-semver-release.properties
 }
 
+@test "Create alpha pre-release with --channel flag" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create initial release tag
+  tag "v1.0.0"
+  # Create another commit
+  commit 'Second'
+
+  run --separate-stderr ./git-semver-release patch --channel alpha
+  assert_success
+  assert_stderr 'Released 1.0.1-alpha'
+  run git tag --points-at HEAD
+  assert_output --regexp '^v1\.0\.1-alpha$'
+}
+
+@test "Create beta pre-release with --channel flag" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create initial release tag
+  tag "v1.0.0"
+  # Create another commit
+  commit 'Second'
+
+  run --separate-stderr ./git-semver-release minor --channel beta
+  assert_success
+  assert_stderr 'Released 1.1.0-beta'
+  run git tag --points-at HEAD
+  assert_output --regexp '^v1\.1\.0-beta$'
+}
+
+@test "Create pre-release with --channel using conventional commits" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create initial release tag
+  tag "v1.0.0"
+  # Create conventional commit
+  commit 'feat: new feature'
+
+  run --separate-stderr ./git-semver-release --channel rc
+  assert_success
+  assert_stderr 'Released 1.1.0-rc'
+  run git tag --points-at HEAD
+  assert_output --regexp '^v1\.1\.0-rc$'
+}
+
+@test "Pre-release tag does not affect stable version calculation" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create initial release tag
+  tag "v1.0.0"
+  # Create another commit
+  commit 'Second'
+  # Create pre-release tag
+  tag "v1.0.1-alpha"
+  # Create another commit
+  commit 'Third'
+
+  run --separate-stderr ./git-semver-release patch
+  assert_success
+  assert_stderr 'Released 1.0.1'
+  run git tag --points-at HEAD
+  assert_output --regexp '^v1\.0\.1$'
+}
+
+@test "Pre-release tag does not affect version command" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create initial release tag
+  tag "v1.0.0"
+  # Create another commit
+  commit 'Second'
+  # Create pre-release tag
+  tag "v1.0.1-alpha"
+  # Create another commit
+  commit 'Third'
+
+  run ./git-semver-release version
+  assert_success
+  assert_output --regexp '^1\.0\.1-alpha\.2\.[0-9a-f]{7}$'
+}
+
+@test "Dry run with --channel does not create tag" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+
+  run --separate-stderr ./git-semver-release patch --channel alpha --dry-run
+  assert_success
+  assert_stderr 'Would release 0.0.1-alpha'
+
+  # Verify no tag was created
+  run git tag
+  assert_output ''
+}
+
 initialize() {
   git init
   git config user.name 'test'

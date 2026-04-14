@@ -48,7 +48,7 @@ git-semver-release            # Creates v1.0.0 tag for breaking changes (!: or B
 
 ## Prerequisites
 
-- [Git 2.4+](https://git-scm.com/) — required for `git tag --points-at`
+- [Git 2.13+](https://git-scm.com/) — required for `git describe --exclude`
 - [Bash 4+](https://www.gnu.org/software/bash/)
 
 ## Commands
@@ -71,14 +71,14 @@ Returns the current version **without creating a tag**. If HEAD is on a release 
 ### `major` / `minor` / `patch` — Create Release Tag
 
 ```shell
-git-semver-release (major|minor|patch) [--push] [--dry-run] [MESSAGE]
+git-semver-release (major|minor|patch) [--channel CHANNEL] [--push] [--dry-run] [MESSAGE]
 ```
 
 Creates an annotated Git tag `vMAJOR.MINOR.PATCH`. Fails if there are uncommitted changes.
 
 The optional `MESSAGE` becomes the tag annotation. Use `$version` as a placeholder for the calculated version number (e.g. `"Release $version"`).
 
-Pass `--push` to push the created tag to the `origin` remote. Pass `--dry-run` to preview the release without creating a tag or pushing.
+Pass `--channel` to create a pre-release tag (e.g. `v1.0.0-alpha`, `v1.0.0-beta`, `v1.0.0-rc`). Pass `--push` to push the created tag to the `origin` remote. Pass `--dry-run` to preview the release without creating a tag or pushing.
 
 **Patch** bumps the third number:
 
@@ -99,7 +99,7 @@ Pass `--push` to push the created tag to the `origin` remote. Pass `--dry-run` t
 ### *(default)* — Release Using Conventional Commits
 
 ```shell
-git-semver-release [--push] [--dry-run] [MESSAGE]
+git-semver-release [--channel CHANNEL] [--push] [--dry-run] [MESSAGE]
 ```
 
 When called without `major`, `minor`, or `patch`, the bump type is determined from **all commit messages since the last release** following [Conventional Commits](https://www.conventionalcommits.org/). The highest bump type wins (major > minor > patch). Optional scopes (e.g. `feat(auth):`) are supported. If no commits match a releasable type, the release is skipped with exit code 7.

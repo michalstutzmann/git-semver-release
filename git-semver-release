@@ -19,7 +19,7 @@ has_commits() {
 get_describe_output() {
   local -r tag_prefix="$1"
 
-  git describe --always --match "${tag_prefix}*" 2> /dev/null || {
+  git describe --always --match "${tag_prefix}*" --exclude "${tag_prefix}*-*" 2> /dev/null || {
    printf ''
   }
 }
@@ -43,7 +43,7 @@ is_dirty() {
 get_latest_release_tag() {
   local -r tag_prefix="$1"
 
-  git describe --abbrev=0 --match "${tag_prefix}[0-9]*.[0-9]*.[0-9]*" 2>/dev/null || printf ''
+  git describe --abbrev=0 --match "${tag_prefix}[0-9]*.[0-9]*.[0-9]*" --exclude "${tag_prefix}*-*" 2>/dev/null || printf ''
 }
 
 get_bump_type_for_commits_since_tag() {
@@ -201,12 +201,17 @@ release() {
   local -r version_type="$5"
   local -r push="$6"
   local -r dry_run="$7"
+  local -r channel="$8"
 
   local version
   version="$(version "$pre_release_format" "$dirty_indicator" "$tag_prefix" 'semver' "$version_type")"
 
   if [[ $version =~ ^([0-9]+\.[0-9]+\.[0-9]+).*$ ]]; then
       version="${BASH_REMATCH[1]}"
+  fi
+
+  if [[ -n $channel ]]; then
+    version="$version-$channel"
   fi
 
   local -r tag="${tag_prefix}$version"
@@ -236,6 +241,7 @@ conventional() {
   local -r message="$4"
   local -r push="$5"
   local -r dry_run="$6"
+  local -r channel="$7"
 
   local latest_tag
   latest_tag="$(get_latest_release_tag "$tag_prefix")"
@@ -248,7 +254,7 @@ conventional() {
     return 2
   fi
 
-  release "$pre_release_format" "$dirty_indicator" "$tag_prefix" "$message" "$version_type" "$push" "$dry_run" || return 3
+  release "$pre_release_format" "$dirty_indicator" "$tag_prefix" "$message" "$version_type" "$push" "$dry_run" "$channel" || return 3
 }
 
 main() {
@@ -269,7 +275,7 @@ main() {
       done < .git-semver-release.properties
   fi
 
-  local -r channel="${config["channel"]:-alpha}"
+  local channel="${config["channel"]:-alpha}"
   local -r dirty_indicator="${config["dirty_indicator"]:-dirty}"
   local pre_release_format="${config["pre_release_format"]:-\$channel\$separator\$commit_count\$separator\$commit_short_sha\$separator\$dirty_indicator}"
   pre_release_format="${pre_release_format//\$channel/"$channel"}"
@@ -278,12 +284,19 @@ main() {
 
   local push=0
   local dry_run=0
+  local consume_channel=0
+  channel=''
   local args=()
   for arg in "$@"; do
-    if [[ $arg == '--push' ]]; then
+    if (( consume_channel )); then
+      channel="$arg"
+      consume_channel=0
+    elif [[ $arg == '--push' ]]; then
       push=1
     elif [[ $arg == '--dry-run' ]]; then
       dry_run=1
+    elif [[ $arg == '--channel' ]]; then
+      consume_channel=1
     else
       args+=("$arg")
     fi
@@ -308,7 +321,7 @@ main() {
       fi
 
       local -r message="${args[1]}"
-      release "$pre_release_format" "$dirty_indicator" "$tag_prefix" "$message" "$mode" "$push" "$dry_run" || return 6
+      release "$pre_release_format" "$dirty_indicator" "$tag_prefix" "$message" "$mode" "$push" "$dry_run" "$channel" || return 6
       ;;
     *)
       if is_dirty; then
@@ -317,7 +330,7 @@ main() {
       fi
 
       local -r message="${args[0]}"
-      conventional "$pre_release_format" "$dirty_indicator" "$tag_prefix" "$message" "$push" "$dry_run" || return 7
+      conventional "$pre_release_format" "$dirty_indicator" "$tag_prefix" "$message" "$push" "$dry_run" "$channel" || return 7
       ;;
   esac
 }
