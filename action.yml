@@ -32,7 +32,7 @@ runs:
       shell: bash
       run: |
         chmod +x "${{ github.action_path }}/git-semver-release"
-        echo "${{ github.action_path }}" >> "$GITHUB_PATH"
+        printf '%s' "${{ github.action_path }}" >> "$GITHUB_PATH"
     - name: Run Git SemVer Release
       id: git-semver-release
       shell: bash
@@ -57,4 +57,4 @@ runs:
         fi
 
         version=$(git-semver-release "${args[@]}")
-        echo "version=$version" >> "$GITHUB_OUTPUT"
+        printf 'version=%s' "$version" >> "$GITHUB_OUTPUT"

@@ -190,7 +190,7 @@ version() {
   version="$version-$pre_release"
   version="${version%-}"
 
-  printf '%s' "$version"
+  printf '%s\n' "$version"
 }
 
 release() {
@@ -227,10 +227,10 @@ release() {
     git tag --annotate "$tag" --message "Release $version"
   fi
 
-  printf 'Released %s\n' "$version" 1>&2
+  printf '%s\n' "$version"
 
   if (( push )); then
-    git push origin "$tag" || return 1
+    git push origin "$tag" 1>&2 || return 1
   fi
 }
 

@@ -102,9 +102,9 @@ teardown() {
   # Create initial commit
   commit 'fix: initial fix'
 
-  run --separate-stderr ./git-semver-release 'Initial'
+  run ./git-semver-release 'Initial'
   assert_success
-  assert_stderr 'Released 0.0.1'
+  assert_output '0.0.1'
 
   run git tag --points-at HEAD
   assert_output --regexp '^v0\.0\.1$'
@@ -131,9 +131,9 @@ teardown() {
   # Create initial commit
   commit 'Initial'
 
-  run --separate-stderr ./git-semver-release patch 'Release'
+  run ./git-semver-release patch 'Release'
   assert_success
-  assert_stderr 'Released 0.0.1'
+  assert_output '0.0.1'
   run git tag --points-at HEAD
   assert_output --regexp '^v0\.0\.1$'
 }
@@ -462,7 +462,7 @@ teardown() {
 
   run --separate-stderr ./git-semver-release patch --push
   assert_success
-  assert_stderr --partial 'Released 0.0.1'
+  assert_output '0.0.1'
 
   # Verify tag was pushed to remote
   run env -u GIT_DIR -u GIT_WORK_TREE git -C tmp/remote tag
@@ -624,9 +624,9 @@ teardown() {
   # Create another commit
   commit 'fix: bug fix'
 
-  run --separate-stderr ./git-semver-release
+  run ./git-semver-release
   assert_success
-  assert_stderr 'Released 1.0.1'
+  assert_output '1.0.1'
   run git tag --points-at HEAD
   assert_output --regexp '^1\.0\.1$'
   rm -f .git-semver-release.properties
@@ -658,9 +658,9 @@ teardown() {
   # Create another commit
   commit 'Second'
 
-  run --separate-stderr ./git-semver-release patch --channel alpha
+  run ./git-semver-release patch --channel alpha
   assert_success
-  assert_stderr 'Released 1.0.1-alpha'
+  assert_output '1.0.1-alpha'
   run git tag --points-at HEAD
   assert_output --regexp '^v1\.0\.1-alpha$'
 }
@@ -675,9 +675,9 @@ teardown() {
   # Create another commit
   commit 'Second'
 
-  run --separate-stderr ./git-semver-release minor --channel beta
+  run ./git-semver-release minor --channel beta
   assert_success
-  assert_stderr 'Released 1.1.0-beta'
+  assert_output '1.1.0-beta'
   run git tag --points-at HEAD
   assert_output --regexp '^v1\.1\.0-beta$'
 }
@@ -692,9 +692,9 @@ teardown() {
   # Create conventional commit
   commit 'feat: new feature'
 
-  run --separate-stderr ./git-semver-release --channel rc
+  run ./git-semver-release --channel rc
   assert_success
-  assert_stderr 'Released 1.1.0-rc'
+  assert_output '1.1.0-rc'
   run git tag --points-at HEAD
   assert_output --regexp '^v1\.1\.0-rc$'
 }
@@ -713,9 +713,9 @@ teardown() {
   # Create another commit
   commit 'Third'
 
-  run --separate-stderr ./git-semver-release patch
+  run ./git-semver-release patch
   assert_success
-  assert_stderr 'Released 1.0.1'
+  assert_output '1.0.1'
   run git tag --points-at HEAD
   assert_output --regexp '^v1\.0\.1$'
 }
