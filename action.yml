@@ -7,12 +7,12 @@ branding:
 outputs:
   version:
     description: 'The calculated version'
-    value: ${{ steps.semver.outputs.version }}
+    value: ${{ steps.git-semver-release.outputs.version }}
 runs:
   using: 'composite'
   steps:
     - name: Run git-semver-release
-      id: semver
+      id: git-semver-release
       shell: bash
       run: |
         chmod +x "${{ github.action_path }}/git-semver-release"
