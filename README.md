@@ -172,15 +172,26 @@ This produces versions like `0.0.1-feature-login.3.abcdef0` instead of `0.0.1-al
 
 ## GitHub Action
 
+### Inputs
+
+| Input | Description | Default |
+|-|-|-|
+| `command` | Command to run: `version`, `major`, `minor`, `patch`, or `release` (conventional commits) | `version` |
+| `push` | Push the created tag to the origin remote | `false` |
+| `channel` | Create a pre-release tag with the given channel (e.g. `alpha`, `beta`, `rc`) | |
+| `message` | Annotation message for the tag (supports `$version` placeholder) | |
+
 ### Outputs
 
 | Output | Description |
 |-|-|
-| `version` | The calculated pre-release version |
+| `version` | The calculated version |
 
 > **Important:** Use `fetch-depth: 0`, `fetch-tags: true` and `ref: ${{ github.ref }}` on `actions/checkout` so the tool can access all tags and commit history.
 
-### Example
+### Examples
+
+#### Get the current pre-release version
 
 ```yaml
 - uses: actions/checkout@v4
@@ -191,6 +202,35 @@ This produces versions like `0.0.1-feature-login.3.abcdef0` instead of `0.0.1-al
 - uses: michalstutzmann/git-semver-release@v1
   id: git-semver-release
 - run: echo "${{ steps.git-semver-release.outputs.version }}"
+```
+
+#### Create a release using conventional commits
+
+```yaml
+- uses: actions/checkout@v4
+  with:
+    fetch-depth: 0
+    fetch-tags: true
+    ref: ${{ github.ref }}
+- uses: michalstutzmann/git-semver-release@v1
+  with:
+    command: release
+    push: true
+```
+
+#### Create a minor release with a channel
+
+```yaml
+- uses: actions/checkout@v4
+  with:
+    fetch-depth: 0
+    fetch-tags: true
+    ref: ${{ github.ref }}
+- uses: michalstutzmann/git-semver-release@v1
+  with:
+    command: minor
+    channel: beta
+    push: true
 ```
 
 The action adds `git-semver-release` to `PATH`, so it can be called directly in subsequent steps:

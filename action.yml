@@ -4,6 +4,23 @@ description: 'Calculate the current pre-release version from Git tags using Sema
 branding:
   icon: 'tag'
   color: 'blue'
+inputs:
+  command:
+    description: 'Command to run: version, major, minor, patch, or release (conventional commits). Default: version'
+    required: false
+    default: 'version'
+  push:
+    description: 'Push the created tag to the origin remote'
+    required: false
+    default: 'false'
+  channel:
+    description: 'Create a pre-release tag with the given channel (e.g. alpha, beta, rc)'
+    required: false
+    default: ''
+  message:
+    description: 'Annotation message for the tag (supports $version placeholder)'
+    required: false
+    default: ''
 outputs:
   version:
     description: 'The calculated version'
@@ -11,14 +28,33 @@ outputs:
 runs:
   using: 'composite'
   steps:
-    - name: Install git-semver-release
+    - name: Install Git SemVer Release
       shell: bash
       run: |
         chmod +x "${{ github.action_path }}/git-semver-release"
         echo "${{ github.action_path }}" >> "$GITHUB_PATH"
-    - name: Run git-semver-release
+    - name: Run Git SemVer Release
       id: git-semver-release
       shell: bash
       run: |
-        version=$(git-semver-release version)
+        args=()
+
+        command="${{ inputs.command }}"
+        if [ "$command" != "release" ]; then
+          args+=("$command")
+        fi
+
+        if [ "${{ inputs.push }}" = "true" ]; then
+          args+=("--push")
+        fi
+
+        if [ -n "${{ inputs.channel }}" ]; then
+          args+=("--channel" "${{ inputs.channel }}")
+        fi
+
+        if [ -n "${{ inputs.message }}" ]; then
+          args+=("${{ inputs.message }}")
+        fi
+
+        version=$(git-semver-release "${args[@]}")
         echo "version=$version" >> "$GITHUB_OUTPUT"
