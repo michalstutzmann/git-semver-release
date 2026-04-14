@@ -11,10 +11,14 @@ outputs:
 runs:
   using: 'composite'
   steps:
+    - name: Install git-semver-release
+      shell: bash
+      run: |
+        chmod +x "${{ github.action_path }}/git-semver-release"
+        echo "${{ github.action_path }}" >> "$GITHUB_PATH"
     - name: Run git-semver-release
       id: git-semver-release
       shell: bash
       run: |
-        chmod +x "${{ github.action_path }}/git-semver-release"
-        version=$("${{ github.action_path }}/git-semver-release" version)
+        version=$(git-semver-release version)
         echo "version=$version" >> "$GITHUB_OUTPUT"

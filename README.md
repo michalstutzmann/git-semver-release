@@ -193,6 +193,18 @@ This produces versions like `0.0.1-feature-login.3.abcdef0` instead of `0.0.1-al
 - run: echo "${{ steps.git-semver-release.outputs.version }}"
 ```
 
+The action adds `git-semver-release` to `PATH`, so it can be called directly in subsequent steps:
+
+```yaml
+- uses: actions/checkout@v4
+  with:
+    fetch-depth: 0
+    fetch-tags: true
+    ref: ${{ github.ref }}
+- uses: michalstutzmann/git-semver-release@v1
+- run: echo "$(git-semver-release version)"
+```
+
 ## CI Examples
 
 ### Maven (CI-Friendly)
@@ -228,8 +240,7 @@ docker build --push --tag "myregistry/myimage:$(git-semver-release version)" .
     fetch-tags: true
     ref: ${{ github.ref }}
 - uses: michalstutzmann/git-semver-release@v1
-  id: git-semver-release
-- run: docker build --push --tag "myregistry/myimage:${{ steps.git-semver-release.outputs.version }}" .
+- run: docker build --push --tag "myregistry/myimage:$(git-semver-release version)" .
 ```
 
 ## Exit Codes
