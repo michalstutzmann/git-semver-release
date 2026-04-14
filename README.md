@@ -189,8 +189,8 @@ This produces versions like `0.0.1-feature-login.3.abcdef0` instead of `0.0.1-al
     fetch-tags: true
     ref: ${{ github.ref }}
 - uses: michalstutzmann/git-semver-release@v1
-  id: semver
-- run: echo "${{ steps.semver.outputs.version }}"
+  id: git-semver-release
+- run: echo "${{ steps.git-semver-release.outputs.version }}"
 ```
 
 ## CI Examples
@@ -228,8 +228,8 @@ docker build --push --tag "myregistry/myimage:$(git-semver-release version)" .
     fetch-tags: true
     ref: ${{ github.ref }}
 - uses: michalstutzmann/git-semver-release@v1
-  id: semver
-- run: docker build --push --tag "myregistry/myimage:${{ steps.semver.outputs.version }}" .
+  id: git-semver-release
+- run: docker build --push --tag "myregistry/myimage:${{ steps.git-semver-release.outputs.version }}" .
 ```
 
 ## Exit Codes
@@ -259,7 +259,7 @@ docker build --push --tag "myregistry/myimage:$(git-semver-release version)" .
 bats test/test.bats
 ```
 
-### Run GitHub Action Locally
+### Run GitHub Action Workflow Locally
 
 ```shell
 act push -s GITHUB_TOKEN="$(gh auth token)"
