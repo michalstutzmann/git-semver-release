@@ -6,7 +6,7 @@ A single Bash script that versions your project from Git tags using [Semantic Ve
 - **`major` / `minor` / `patch`** — creates an annotated Git tag with the bumped version
 - **(default)** — creates a tag with the bump type determined from [Conventional Commits](https://www.conventionalcommits.org/)
 
-## Quick Start
+## Installation
 
 ### Homebrew
 
@@ -24,21 +24,23 @@ curl https://raw.githubusercontent.com/michalstutzmann/git-semver-release/refs/h
 
 > Make sure `~/.local/bin` is in your `PATH`.
 
-### Usage
-
-#### Manual
+## Usage
 
 ```shell
 git-semver-release version    # E.g. 0.0.1-alpha.3.abcdef0
+```
+
+### Manual Bump
+
+```shell
 git-semver-release patch      # Creates v0.0.1 tag
 git-semver-release minor      # Creates v0.1.0 tag
 git-semver-release major      # Creates v1.0.0 tag
 ```
 
-#### Conventional Commits
+### Conventional Commits
 
 ```shell
-git-semver-release version    # E.g. 0.0.1-alpha.3.abcdef0
 git-semver-release            # Creates v0.0.1 tag for fix:/perf: commits
 git-semver-release            # Creates v0.1.0 tag for feat: commits
 git-semver-release            # Creates v1.0.0 tag for breaking changes (!: or BREAKING CHANGE:)
@@ -229,6 +231,19 @@ docker build --push --tag "myregistry/myimage:$(git-semver-release version)" .
   id: semver
 - run: docker build --push --tag "myregistry/myimage:${{ steps.semver.outputs.version }}" .
 ```
+
+## Exit Codes
+
+| Code | Description |
+|-|-|
+| 0 | Success |
+| 1 | Not a Git repository |
+| 2 | No commits yet |
+| 3 | Failed to create config file |
+| 4 | Failed to calculate version |
+| 5 | Uncommitted changes found |
+| 6 | Failed to create release tag |
+| 7 | No releasable changes found (conventional commits) |
 
 ## Development
 
