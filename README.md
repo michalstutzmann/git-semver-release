@@ -245,6 +245,80 @@ The action adds `git-semver-release` to `PATH`, so it can be called directly in 
 - run: echo "$(git-semver-release version)"
 ```
 
+## GitLab CI
+
+The included `gitlab-ci.yml` provides a hidden job `.git-semver-release` that you can extend in your pipeline.
+
+### Variables
+
+| Variable | Description | Default |
+|-|-|-|
+| `GSR_COMMAND` | Command to run: `version`, `major`, `minor`, `patch`, or `release` (conventional commits) | `version` |
+| `GSR_PUSH` | Push the created tag to the origin remote | `false` |
+| `GSR_CHANNEL` | Create a pre-release tag with the given channel (e.g. `alpha`, `beta`, `rc`) | |
+| `GSR_MESSAGE` | Annotation message for the tag (supports `$version` placeholder) | |
+
+### Outputs
+
+The calculated version is exported as `$VERSION` via a [dotenv artifact](https://docs.gitlab.com/ee/ci/variables/#pass-an-environment-variable-to-another-job), making it available to all downstream jobs.
+
+> **Important:** The job sets `GIT_DEPTH: 0` and `GIT_STRATEGY: clone` so the tool can access all tags and commit history.
+
+### Examples
+
+#### Get the current pre-release version
+
+```yaml
+include:
+  - local: 'gitlab-ci.yml'
+
+semver:
+  extends: .git-semver-release
+```
+
+#### Create a release using conventional commits
+
+```yaml
+include:
+  - local: 'gitlab-ci.yml'
+
+release:
+  extends: .git-semver-release
+  variables:
+    GSR_COMMAND: "release"
+    GSR_PUSH: "true"
+```
+
+#### Create a minor release with a channel
+
+```yaml
+include:
+  - local: 'gitlab-ci.yml'
+
+release:
+  extends: .git-semver-release
+  variables:
+    GSR_COMMAND: "minor"
+    GSR_CHANNEL: "beta"
+    GSR_PUSH: "true"
+```
+
+#### Use the version in a downstream job
+
+```yaml
+include:
+  - local: 'gitlab-ci.yml'
+
+semver:
+  extends: .git-semver-release
+
+deploy:
+  stage: deploy
+  needs: [semver]
+  script:
+    - echo "Deploying version $VERSION"
+```
+
 ## CI Examples
 
 ### Maven (CI-Friendly)
