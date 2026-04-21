@@ -27,7 +27,7 @@ curl https://raw.githubusercontent.com/michalstutzmann/git-semver-release/refs/h
 ## Usage
 
 ```shell
-git-semver-release version    # E.g. 0.0.1-alpha.3.abcdef0
+git-semver-release            # E.g. 0.0.1-alpha.3.abcdef0
 ```
 
 ### Manual Bump

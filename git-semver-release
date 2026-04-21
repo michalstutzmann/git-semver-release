@@ -333,13 +333,7 @@ main() {
       conventional "$pre_release_format" "$dirty_indicator" "$tag_prefix" "$message" "$push" "$dry_run" "$channel" || return 7
       ;;
     *)
-      if is_dirty; then
-        printf 'error: uncommitted changes found' 1>&2
-        return 5
-      fi
-
-      local -r message="${args[0]}"
-      conventional "$pre_release_format" "$dirty_indicator" "$tag_prefix" "$message" "$push" "$dry_run" "$channel" || return 7
+      version "$pre_release_format" "$dirty_indicator" "$tag_prefix" || return 4
       ;;
   esac
 }
