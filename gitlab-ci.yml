@@ -18,17 +18,18 @@
 .git-semver-release:
   image: alpine:latest
   before_script:
-    - apk add --no-cache bash git
+    - apk add --no-cache bash git curl
+    - curl -fsSL "$GSR_SCRIPT_URL" -o /usr/local/bin/git-semver-release
+    - chmod +x /usr/local/bin/git-semver-release
   variables:
     GSR_COMMAND: "version"
     GSR_PUSH: "false"
     GSR_CHANNEL: ""
     GSR_MESSAGE: ""
+    GSR_SCRIPT_URL: "https://raw.githubusercontent.com/michalstutzmann/git-semver-release/main/git-semver-release"
     GIT_DEPTH: 0
     GIT_STRATEGY: clone
   script:
-    - chmod +x "${CI_PROJECT_DIR}/git-semver-release"
-    - export PATH="${CI_PROJECT_DIR}:${PATH}"
     - |
       args=()
 

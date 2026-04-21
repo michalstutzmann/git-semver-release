@@ -1,10 +1,108 @@
 # Git SemVer Release
 
-A single Bash script that versions your project from Git tags using [Semantic Versioning](https://semver.org/). No plugins, no runtime dependencies beyond Git and Bash — works in any CI system or locally.
+[![Test](https://github.com/michalstutzmann/git-semver-release/actions/workflows/test.yml/badge.svg)](https://github.com/michalstutzmann/git-semver-release/actions/workflows/test.yml)
+[![Latest release](https://img.shields.io/github/v/release/michalstutzmann/git-semver-release)](https://github.com/michalstutzmann/git-semver-release/releases)
+[![License](https://img.shields.io/github/license/michalstutzmann/git-semver-release)](LICENSE)
 
-- **`version`** — calculates the current pre-release version without creating any tags
-- **`major` / `minor` / `patch`** — creates an annotated Git tag with the bumped version
-- **`conventional`** — creates a tag with the bump type determined from [Conventional Commits](https://www.conventionalcommits.org/)
+Version your project from Git tags with a single Bash script. No language-specific release framework, no plugins, no runtime dependencies beyond [Git 2.13+](https://git-scm.com/) and [Bash 4+](https://www.gnu.org/software/bash/).
+
+Use it as a local CLI, a [GitHub Action](#github-action), or a [GitLab CI job](#gitlab-ci).
+
+## Quickstart
+
+Install it:
+
+```shell
+brew tap michalstutzmann/git-semver-release
+brew install git-semver-release
+```
+
+or:
+
+```shell
+curl -fsSL https://raw.githubusercontent.com/michalstutzmann/git-semver-release/main/git-semver-release \
+  --output ~/.local/bin/git-semver-release && chmod +x ~/.local/bin/git-semver-release
+```
+
+Then run:
+
+```shell
+git-semver-release version
+# 0.0.1-alpha.3.abcdef0
+
+git-semver-release conventional --dry-run
+# Would release 0.1.0
+
+git-semver-release patch --dry-run
+# Would release 0.0.2
+```
+
+## Why Git SemVer Release
+
+- Single-file Bash tool that works across polyglot repos.
+- Derives versions directly from Git tags and history.
+- Works locally, in Docker builds, in GitHub Actions, and in GitLab CI.
+- Supports both explicit bump commands and [Conventional Commits](https://www.conventionalcommits.org/).
+- Generates pre-release versions from branch and commit metadata without extra services.
+
+## Common Workflows
+
+### Calculate the current version
+
+```shell
+git-semver-release version
+git-semver-release
+```
+
+Example output:
+
+- `0.0.0-alpha.1.abcdef0` for a repo with commits but no release tags yet
+- `0.0.1-alpha.3.abcdef0` for commits after `v0.0.0`
+- `0.0.2-alpha.3.abcdef0.dirty` when the working tree is dirty
+- `1.2.3` when `HEAD` is exactly on tag `v1.2.3`
+
+### Create a release manually
+
+```shell
+git-semver-release patch
+git-semver-release minor
+git-semver-release major
+```
+
+These commands create an annotated Git tag and fail if the working tree is dirty.
+
+### Create a release from Conventional Commits
+
+```shell
+git-semver-release conventional
+```
+
+Commit messages since the last release determine the bump:
+
+- `fix:` or `perf:` -> patch
+- `feat:` -> minor
+- `feat!:` or `BREAKING CHANGE:` -> major
+
+### Publish the tag immediately
+
+```shell
+git-semver-release conventional --push
+git-semver-release minor --channel beta --push
+```
+
+## Why Use This Instead Of Heavier Release Tooling
+
+Use `git-semver-release` if you want:
+
+- Git-based version calculation without bringing in a Node, Ruby, or JVM release framework.
+- A version string you can reuse anywhere: Docker tags, Maven revisions, Gradle properties, SBT, shell scripts, custom deploy steps.
+- A small tool that is easy to audit, vendor, and debug.
+
+Use something else if you need:
+
+- Automated GitHub Releases or release notes publishing.
+- Registry publishing orchestration across npm, PyPI, Maven Central, and similar ecosystems.
+- Full changelog management beyond annotated Git tags.
 
 ## Installation
 
@@ -18,56 +116,21 @@ brew install git-semver-release
 ### Manual
 
 ```shell
-curl https://raw.githubusercontent.com/michalstutzmann/git-semver-release/refs/heads/main/git-semver-release \
+curl -fsSL https://raw.githubusercontent.com/michalstutzmann/git-semver-release/main/git-semver-release \
   --output ~/.local/bin/git-semver-release && chmod +x ~/.local/bin/git-semver-release
 ```
 
-> Make sure `~/.local/bin` is in your `PATH`.
+Make sure `~/.local/bin` is in your `PATH`.
 
-## Usage
+## Command Reference
 
-### Current Version
-
-```shell
-git-semver-release version    # E.g. 0.0.1-alpha.3.abcdef0
-```
-
-or just:
-
-```shell
-git-semver-release            # E.g. 0.0.1-alpha.3.abcdef0
-```
-
-### Manual Bump
-
-```shell
-git-semver-release patch      # Creates v0.0.1 tag
-git-semver-release minor      # Creates v0.1.0 tag
-git-semver-release major      # Creates v1.0.0 tag
-```
-
-### Conventional Commits
-
-```shell
-git-semver-release conventional  # Creates v0.0.1 tag for fix:/perf: commits
-git-semver-release conventional  # Creates v0.1.0 tag for feat: commits
-git-semver-release conventional  # Creates v1.0.0 tag for breaking changes (!: or BREAKING CHANGE:)
-```
-
-## Prerequisites
-
-- [Git 2.13+](https://git-scm.com/) — required for `git describe --exclude`
-- [Bash 4+](https://www.gnu.org/software/bash/)
-
-## Commands
-
-### `version` — Calculate Pre-Release Version
+### `version`
 
 ```shell
 git-semver-release version
 ```
 
-Returns the current version **without creating a tag**. If HEAD is on a release tag, it returns that version exactly. Otherwise, it appends pre-release metadata in the SemVer format `MAJOR.MINOR.PATCH-PRE_RELEASE`.
+Returns the current version without creating a tag. If `HEAD` is on a release tag, it returns that version exactly. Otherwise, it returns the next patch pre-release version.
 
 | Latest release tag | Commits since release | Short SHA | Uncommitted changes | Output |
 |-|-|-|-|-|
@@ -76,17 +139,15 @@ Returns the current version **without creating a tag**. If HEAD is on a release 
 | `v0.0.0` | 1 | `abcdef1` | no | `0.0.1-alpha.1.abcdef1` |
 | `v0.0.1` | 1 | `abcdef1` | yes | `0.0.2-alpha.1.abcdef1.dirty` |
 
-### `major` / `minor` / `patch` — Create Release Tag
+### `major`, `minor`, `patch`
 
 ```shell
 git-semver-release (major|minor|patch) [--channel CHANNEL] [--push] [--dry-run] [MESSAGE]
 ```
 
-Creates an annotated Git tag `vMAJOR.MINOR.PATCH`. Fails if there are uncommitted changes.
+Creates an annotated tag `vMAJOR.MINOR.PATCH`. By default, the tag message is `Release $version` plus a changelog of commit subjects since the previous release.
 
-By default the tag annotation is `Release $version` followed by a changelog listing all commits since the previous release:
-
-```
+```text
 Release 1.2.0
 
 Changes:
@@ -95,41 +156,33 @@ Changes:
 - Update dependencies
 ```
 
-The optional `MESSAGE` overrides this entirely — when provided, no changelog is appended. Use `$version` as a placeholder for the calculated version number (e.g. `"Release $version"`).
+If you pass `MESSAGE`, it replaces the default annotation entirely. Use `$version` as a placeholder, for example `"Release $version"`.
 
-Pass `--channel` to create a pre-release tag (e.g. `v1.0.0-alpha`, `v1.0.0-beta`, `v1.0.0-rc`). Pass `--push` to push the created tag to the `origin` remote. Pass `--dry-run` to preview the release without creating a tag or pushing.
+`--channel` creates a pre-release tag such as `v1.0.0-beta`. `--push` pushes the created tag to `origin`. `--dry-run` prints what would be released without tagging or pushing.
 
-**Patch** bumps the third number:
+| Latest release tag | `patch` | `minor` | `major` |
+|-|-|-|-|
+| *(none)* | `v0.0.1` | `v0.1.0` | `v1.0.0` |
+| `v0.0.1` | `v0.0.2` | `v0.1.0` | `v1.0.0` |
+| `v1.2.3` | `v1.2.4` | `v1.3.0` | `v2.0.0` |
 
-| Latest release tag | Created tag |
-|-|-|
-| *(none)* | `v0.0.1` |
-| `v0.0.0` | `v0.0.1` |
-| `v0.0.1` | `v0.0.2` |
-| `v0.1.0` | `v0.1.1` |
-
-**Major and minor** bump their respective number and reset the lower ones to zero:
-
-| Latest release tag | `major` | `minor` |
-|-|-|-|
-| `v0.0.1` | `v1.0.0` | `v0.1.0` |
-| `v1.2.3` | `v2.0.0` | `v1.3.0` |
-
-### `conventional` — Release Using Conventional Commits
+### `conventional`
 
 ```shell
 git-semver-release conventional [--channel CHANNEL] [--push] [--dry-run] [MESSAGE]
 ```
 
-The bump type is determined from **all commit messages since the last release** following [Conventional Commits](https://www.conventionalcommits.org/). The highest bump type wins (major > minor > patch). Optional scopes (e.g. `feat(auth):`) are supported. If no commits match a releasable type, the release is skipped with exit code 7.
+Determines the bump type from commit messages since the last release using [Conventional Commits](https://www.conventionalcommits.org/). The highest bump wins: major > minor > patch. If no releasable commits are found, the command exits with code `7`.
 
 | Commit message pattern | Bump type | Example |
 |-|-|-|
-| Contains `!:` (breaking change indicator) | **major** | `feat!: remove v1 API` |
-| Contains `BREAKING CHANGE:` in the message body | **major** | `feat: new API\nBREAKING CHANGE: removed v1` |
-| Starts with `feat:` or `feat(<scope>):` | **minor** | `feat(auth): add OAuth login` |
-| Starts with `fix:` / `perf:` (with optional scope) | **patch** | `fix: null pointer on empty input` |
-| Everything else (`chore:`, `docs:`, non-conventional, etc.) | **skip** | `chore: update deps` |
+| Contains `!:` | major | `feat!: remove v1 API` |
+| Contains `BREAKING CHANGE:` in the body | major | `feat: new API` with a breaking-change footer |
+| Starts with `feat:` or `feat(scope):` | minor | `feat(auth): add OAuth login` |
+| Starts with `fix:` or `perf:` | patch | `fix: null pointer on empty input` |
+| Everything else | skipped | `docs: update readme` |
+
+When multiple commits are present, the highest bump type wins:
 
 | Latest release tag | Commits since release | Created tag |
 |-|-|-|
@@ -138,12 +191,11 @@ The bump type is determined from **all commit messages since the last release** 
 | `v0.0.1` | `feat(api): add search` | `v0.1.0` |
 | `v0.1.0` | `feat!: redesign API` | `v1.0.0` |
 | `v0.1.0` | `refactor(api)!: remove deprecated endpoints` | `v1.0.0` |
-| `v1.0.0` | `feat: add filter\nBREAKING CHANGE: changed response format` | `v2.0.0` |
-| `v1.0.0` | `fix: typo` → `feat: add search` → `fix: bug` | `v1.1.0` |
-| `v1.0.0` | `feat: add search` → `feat!: new API` → `fix: bug` | `v2.0.0` |
-| `v1.0.0` | `chore: update deps` → `docs: update readme` | *(skipped)* |
+| `v1.0.0` | `fix: typo` then `feat: add search` then `fix: bug` | `v1.1.0` |
+| `v1.0.0` | `feat: add search` then `feat!: new API` then `fix: bug` | `v2.0.0` |
+| `v1.0.0` | `chore: update deps` then `docs: update readme` | *(skipped)* |
 
-### `create-config-file` — Generate Default Configuration
+### `create-config-file`
 
 ```shell
 git-semver-release create-config-file
@@ -151,66 +203,9 @@ git-semver-release create-config-file
 
 Creates `.git-semver-release.properties` in the current directory with default values.
 
-## Configuration
-
-Customizable via `.git-semver-release.properties`:
-
-```properties
-channel=alpha
-dirty_indicator=dirty
-pre_release_format=$channel$separator$commit_count$separator$commit_short_sha$separator$dirty_indicator
-tag_prefix=v
-```
-
-| Property | Default | Description |
-|-|-|-|
-| `channel` | `alpha` | Pre-release channel identifier (e.g. `alpha`, `beta`, `rc`) |
-| `dirty_indicator` | `dirty` | Appended to pre-release versions when the working tree has uncommitted changes |
-| `pre_release_format` | `$channel$separator…` | Template for pre-release identifiers (see variables below) |
-| `tag_prefix` | `v` | Prefix for Git tags (e.g. `v` produces `v1.0.0`, empty produces `1.0.0`) |
-
-### Variables
-
-| Variable | Replaced with |
-|-|-|
-| `$channel` | Value of `channel` property |
-| `$separator` | `.` (dot, hardcoded) |
-| `$commit_count` | Number of commits since the last release tag |
-| `$commit_short_sha` | Abbreviated SHA of the latest commit |
-| `$dirty_indicator` | Value of `dirty_indicator` if there are uncommitted changes, empty otherwise |
-| `$branch` | Current Git branch name (characters outside `[0-9A-Za-z-]` are replaced with `-`) |
-
-### Example: Branch-Based Pre-Release
-
-```properties
-dirty_indicator=dirty
-pre_release_format=$branch$separator$commit_count$separator$commit_short_sha$separator$dirty_indicator
-```
-
-This produces versions like `0.0.1-feature-login.3.abcdef0` instead of `0.0.1-alpha.3.abcdef0`.
-
 ## GitHub Action
 
-### Inputs
-
-| Input | Description | Default |
-|-|-|-|
-| `command` | Command to run: `version`, `major`, `minor`, `patch`, or `conventional` (conventional commits) | `version` |
-| `push` | Push the created tag to the origin remote | `false` |
-| `channel` | Create a pre-release tag with the given channel (e.g. `alpha`, `beta`, `rc`) | |
-| `message` | Annotation message for the tag (supports `$version` placeholder) | |
-
-### Outputs
-
-| Output | Description |
-|-|-|
-| `version` | The calculated version |
-
-> **Important:** Use `fetch-depth: 0`, `fetch-tags: true` and `ref: ${{ github.ref }}` on `actions/checkout` so the tool can access all tags and commit history.
-
-### Examples
-
-#### Get the current pre-release version
+Start with a copy-paste workflow:
 
 ```yaml
 - uses: actions/checkout@v4
@@ -223,7 +218,7 @@ This produces versions like `0.0.1-feature-login.3.abcdef0` instead of `0.0.1-al
 - run: echo "${{ steps.git-semver-release.outputs.version }}"
 ```
 
-#### Create a release using conventional commits
+Release from Conventional Commits:
 
 ```yaml
 - uses: actions/checkout@v4
@@ -237,22 +232,24 @@ This produces versions like `0.0.1-feature-login.3.abcdef0` instead of `0.0.1-al
     push: true
 ```
 
-#### Create a minor release with a channel
+Inputs:
 
-```yaml
-- uses: actions/checkout@v4
-  with:
-    fetch-depth: 0
-    fetch-tags: true
-    ref: ${{ github.ref }}
-- uses: michalstutzmann/git-semver-release@v1
-  with:
-    command: minor
-    channel: beta
-    push: true
-```
+| Input | Description | Default |
+|-|-|-|
+| `command` | `version`, `major`, `minor`, `patch`, or `conventional` | `version` |
+| `push` | Push the created tag to `origin` | `false` |
+| `channel` | Pre-release channel such as `alpha`, `beta`, `rc` | |
+| `message` | Tag annotation message, supports `$version` | |
 
-The action adds `git-semver-release` to `PATH`, so it can be called directly in subsequent steps:
+Outputs:
+
+| Output | Description |
+|-|-|
+| `version` | The calculated version |
+
+Important: use `fetch-depth: 0`, `fetch-tags: true`, and `ref: ${{ github.ref }}` on `actions/checkout` so the tool can see tags and full history.
+
+The action also adds `git-semver-release` to `PATH`, so you can call it directly in later steps:
 
 ```yaml
 - uses: actions/checkout@v4
@@ -266,31 +263,20 @@ The action adds `git-semver-release` to `PATH`, so it can be called directly in 
 
 ## GitLab CI
 
-Two integration options are available depending on your GitLab setup.
+Two integration options are available depending on your setup.
 
 ### Option 1: `include: remote`
 
-Works directly from GitHub — no mirroring required:
+Use the hosted GitLab template directly from GitHub:
 
 ```yaml
 include:
   - remote: 'https://raw.githubusercontent.com/michalstutzmann/git-semver-release/main/gitlab-ci.yml'
 ```
 
-The included `gitlab-ci.yml` provides a hidden job `.git-semver-release` that you can extend in your pipeline.
+The included template downloads the latest script and exposes a hidden job named `.git-semver-release`.
 
-#### Variables
-
-| Variable | Description | Default |
-|-|-|-|
-| `GSR_COMMAND` | Command to run: `version`, `major`, `minor`, `patch`, or `conventional` (conventional commits) | `version` |
-| `GSR_PUSH` | Push the created tag to the origin remote | `false` |
-| `GSR_CHANNEL` | Create a pre-release tag with the given channel (e.g. `alpha`, `beta`, `rc`) | |
-| `GSR_MESSAGE` | Annotation message for the tag (supports `$version` placeholder) | |
-
-#### Examples
-
-##### Get the current pre-release version
+Calculate the current version:
 
 ```yaml
 include:
@@ -300,7 +286,7 @@ semver:
   extends: .git-semver-release
 ```
 
-##### Create a release using conventional commits
+Create a release using Conventional Commits:
 
 ```yaml
 include:
@@ -313,21 +299,7 @@ release:
     GSR_PUSH: "true"
 ```
 
-##### Create a minor release with a channel
-
-```yaml
-include:
-  - remote: 'https://raw.githubusercontent.com/michalstutzmann/git-semver-release/main/gitlab-ci.yml'
-
-release:
-  extends: .git-semver-release
-  variables:
-    GSR_COMMAND: "minor"
-    GSR_CHANNEL: "beta"
-    GSR_PUSH: "true"
-```
-
-##### Use the version in a downstream job
+Use the calculated version in a downstream job:
 
 ```yaml
 include:
@@ -343,31 +315,19 @@ deploy:
     - echo "Deploying version $VERSION"
 ```
 
+Variables:
+
+| Variable | Description | Default |
+|-|-|-|
+| `GSR_COMMAND` | `version`, `major`, `minor`, `patch`, or `conventional` | `version` |
+| `GSR_PUSH` | Push the created tag to `origin` | `false` |
+| `GSR_CHANNEL` | Pre-release channel such as `alpha`, `beta`, `rc` | |
+| `GSR_MESSAGE` | Tag annotation message, supports `$version` | |
+| `GSR_SCRIPT_URL` | Script download URL | GitHub raw URL |
+
 ### Option 2: GitLab CI/CD Component
 
-For environments where `include: remote` is restricted (e.g. corporate firewalls), the repo can be [mirrored to GitLab](https://docs.gitlab.com/ee/user/project/repository/mirror/) and used as a [CI/CD Component](https://docs.gitlab.com/ee/ci/components/) with typed inputs and validation.
-
-#### Inputs
-
-| Input | Type | Description | Default |
-|-|-|-|-|
-| `stage` | `string` | Pipeline stage for the job | `test` |
-| `command` | `string` | Command to run: `version`, `major`, `minor`, `patch`, or `conventional` (conventional commits) | `version` |
-| `push` | `boolean` | Push the created tag to the origin remote | `false` |
-| `channel` | `string` | Create a pre-release tag with the given channel (e.g. `alpha`, `beta`, `rc`) | |
-| `message` | `string` | Annotation message for the tag (supports `$version` placeholder) | |
-| `script_url` | `string` | URL to download the git-semver-release script from | *(GitHub raw URL)* |
-
-#### Examples
-
-##### Get the current pre-release version
-
-```yaml
-include:
-  - component: gitlab.com/<namespace>/git-semver-release/git-semver-release@main
-```
-
-##### Create a release using conventional commits
+If your environment prefers GitLab components, mirror this repo to GitLab and include the component:
 
 ```yaml
 include:
@@ -377,18 +337,7 @@ include:
       push: true
 ```
 
-##### Create a minor release with a channel
-
-```yaml
-include:
-  - component: gitlab.com/<namespace>/git-semver-release/git-semver-release@main
-    inputs:
-      command: minor
-      channel: beta
-      push: true
-```
-
-##### Use the version in a downstream job
+Use the version in a downstream job:
 
 ```yaml
 include:
@@ -405,15 +354,64 @@ deploy:
     - echo "Deploying version $VERSION"
 ```
 
-### Outputs
+Inputs:
 
-The calculated version is exported as `$VERSION` via a [dotenv artifact](https://docs.gitlab.com/ee/ci/variables/#pass-an-environment-variable-to-another-job), making it available to all downstream jobs.
+| Input | Type | Description | Default |
+|-|-|-|-|
+| `stage` | `string` | Pipeline stage for the job | `test` |
+| `command` | `string` | `version`, `major`, `minor`, `patch`, or `conventional` | `version` |
+| `push` | `boolean` | Push the created tag to `origin` | `false` |
+| `channel` | `string` | Pre-release channel such as `alpha`, `beta`, `rc` | |
+| `message` | `string` | Tag annotation message, supports `$version` | |
+| `script_url` | `string` | URL used to download `git-semver-release` | GitHub raw URL |
 
-> **Important:** Both options set `GIT_DEPTH: 0` and `GIT_STRATEGY: clone` so the tool can access all tags and commit history.
+Outputs:
+
+The calculated version is exported as `$VERSION` via a [dotenv artifact](https://docs.gitlab.com/ee/ci/variables/#pass-an-environment-variable-to-another-job), so downstream jobs can reuse it directly.
+
+Important: both GitLab options set `GIT_DEPTH: 0` and `GIT_STRATEGY: clone` so tags and history are available.
+
+## Configuration
+
+Customize behavior with `.git-semver-release.properties`:
+
+```properties
+channel=alpha
+dirty_indicator=dirty
+pre_release_format=$channel$separator$commit_count$separator$commit_short_sha$separator$dirty_indicator
+tag_prefix=v
+```
+
+| Property | Default | Description |
+|-|-|-|
+| `channel` | `alpha` | Default pre-release channel |
+| `dirty_indicator` | `dirty` | Added when the working tree has uncommitted changes |
+| `pre_release_format` | `$channel$separator...` | Template for pre-release identifiers |
+| `tag_prefix` | `v` | Prefix for Git tags |
+
+Variables available in `pre_release_format`:
+
+| Variable | Replaced with |
+|-|-|
+| `$channel` | Value of `channel` |
+| `$separator` | `.` |
+| `$commit_count` | Number of commits since the last release tag |
+| `$commit_short_sha` | Abbreviated SHA of the latest commit |
+| `$dirty_indicator` | `dirty_indicator` when the tree is dirty, otherwise empty |
+| `$branch` | Current branch with non-alphanumeric characters normalized to `-` |
+
+Example branch-based pre-release:
+
+```properties
+dirty_indicator=dirty
+pre_release_format=$branch$separator$commit_count$separator$commit_short_sha$separator$dirty_indicator
+```
+
+This produces versions like `0.0.1-feature-login.3.abcdef0`.
 
 ## CI Examples
 
-### Maven (CI-Friendly)
+### Maven
 
 ```shell
 mvn --define="revision=$(git-semver-release version)" deploy
@@ -460,28 +458,28 @@ docker build --push --tag "myregistry/myimage:$(git-semver-release version)" .
 | 4 | Failed to calculate version |
 | 5 | Uncommitted changes found |
 | 6 | Failed to create release tag |
-| 7 | No releasable changes found (conventional commits) |
+| 7 | No releasable changes found |
 
 ## Development
 
-### Prerequisites
+Prerequisites:
 
 - [Bats 1.5.0+](https://bats-core.readthedocs.io/en/stable/)
-- [Nectos Act](https://nektosact.com/) (for local GitHub Action testing)
+- [Nectos Act](https://nektosact.com/) for local GitHub Action testing
 - [GitHub CLI](https://cli.github.com/)
 
-### Run Tests
+Run tests:
 
 ```shell
 bats test/test.bats
 ```
 
-### Run GitHub Action Workflow Locally
+Run the GitHub Action workflow locally:
 
 ```shell
 act push -s GITHUB_TOKEN="$(gh auth token)"
 ```
 
-> Make sure `DOCKER_HOST` points to the Docker socket, e.g. on macOS with Colima: `DOCKER_HOST=unix:///Users/<USER>/.colima/default/docker.sock`
+On macOS with Colima, make sure `DOCKER_HOST` points to the Docker socket, for example `DOCKER_HOST=unix:///Users/<USER>/.colima/default/docker.sock`.
 
-> On macOS use `--container-architecture linux/arm64`.
+On macOS, use `--container-architecture linux/arm64`.

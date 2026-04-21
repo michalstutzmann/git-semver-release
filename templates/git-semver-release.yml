@@ -29,7 +29,7 @@ spec:
       description: 'Annotation message for the tag (supports $version placeholder)'
     script_url:
       type: string
-      default: 'https://raw.githubusercontent.com/michalstutzmann/git-semver-release/main/git-semver-release'
+      default: 'https://raw.githubusercontent.com/michalstutzmann/git-semver-release/$VERSION/git-semver-release'
       description: 'URL to download the git-semver-release script from'
 ---
 "git-semver-release":
