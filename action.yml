@@ -1,12 +1,14 @@
 ---
 name: 'Git SemVer Release'
-description: 'Calculate the current pre-release version from Git tags using Semantic Versioning'
+description: 'Calculate the current pre-release version from Git tags using
+  Semantic Versioning'
 branding:
   icon: 'tag'
   color: 'blue'
 inputs:
   command:
-    description: 'Command to run: version, major, minor, patch, or conventional (conventional commits). Default: version'
+    description: 'Command to run: version, major, minor, patch, or conventional.
+      Default: version'
     required: false
     default: 'version'
   push:

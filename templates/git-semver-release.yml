@@ -1,3 +1,4 @@
+---
 spec:
   inputs:
     stage:
@@ -7,7 +8,7 @@ spec:
     command:
       type: string
       default: version
-      description: 'Command to run: version, major, minor, patch, or conventional (conventional commits)'
+      description: 'Command to run: version, major, minor, patch, or conventional'
       options:
         - version
         - major
@@ -31,7 +32,6 @@ spec:
       default: 'https://raw.githubusercontent.com/michalstutzmann/git-semver-release/main/git-semver-release'
       description: 'URL to download the git-semver-release script from'
 ---
-
 "git-semver-release":
   image: alpine:latest
   stage: $[[ inputs.stage ]]
