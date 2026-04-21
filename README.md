@@ -84,7 +84,18 @@ git-semver-release (major|minor|patch) [--channel CHANNEL] [--push] [--dry-run] 
 
 Creates an annotated Git tag `vMAJOR.MINOR.PATCH`. Fails if there are uncommitted changes.
 
-The optional `MESSAGE` becomes the tag annotation. Use `$version` as a placeholder for the calculated version number (e.g. `"Release $version"`).
+By default the tag annotation is `Release $version` followed by a changelog listing all commits since the previous release:
+
+```
+Release 1.2.0
+
+Changes:
+- Add search endpoint
+- Fix null pointer on empty input
+- Update dependencies
+```
+
+The optional `MESSAGE` overrides this entirely — when provided, no changelog is appended. Use `$version` as a placeholder for the calculated version number (e.g. `"Release $version"`).
 
 Pass `--channel` to create a pre-release tag (e.g. `v1.0.0-alpha`, `v1.0.0-beta`, `v1.0.0-rc`). Pass `--push` to push the created tag to the `origin` remote. Pass `--dry-run` to preview the release without creating a tag or pushing.
 

@@ -75,6 +75,17 @@ get_bump_type_for_commits_since_tag() {
   printf '%s' "$bump_type"
 }
 
+get_changelog_since_tag() {
+  local -r tag="$1"
+
+  local range='HEAD'
+  if [[ -n $tag ]]; then
+    range="$tag..HEAD"
+  fi
+
+  git log "$range" --pretty=format:'- %s' --no-merges
+}
+
 get_latest_tag_for_commit_pointed_by_tag() {
   local -r tag="$1"
 
@@ -224,7 +235,22 @@ release() {
   if [[ -n $message ]]; then
     git tag --annotate "$tag" --message "${message//\$version/"$version"}"
   else
-    git tag --annotate "$tag" --message "Release $version"
+    local latest_release_tag
+    latest_release_tag="$(get_latest_release_tag "$tag_prefix")"
+
+    local changelog
+    changelog="$(get_changelog_since_tag "$latest_release_tag")"
+
+    local tag_message="Release $version"
+
+    if [[ -n $changelog ]]; then
+      tag_message="$tag_message
+
+Changes:
+$changelog"
+    fi
+
+    git tag --annotate "$tag" --message "$tag_message"
   fi
 
   printf '%s\n' "$version"
