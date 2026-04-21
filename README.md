@@ -26,6 +26,14 @@ curl https://raw.githubusercontent.com/michalstutzmann/git-semver-release/refs/h
 
 ## Usage
 
+### Current Version
+
+```shell
+git-semver-release version    # E.g. 0.0.1-alpha.3.abcdef0
+```
+
+or just:
+
 ```shell
 git-semver-release            # E.g. 0.0.1-alpha.3.abcdef0
 ```
