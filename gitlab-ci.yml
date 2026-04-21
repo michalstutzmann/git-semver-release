@@ -1,11 +1,9 @@
-# GitLab CI component for Git SemVer Release
+# GitLab CI template for Git SemVer Release
 #
 # Usage in .gitlab-ci.yml:
 #
 #   include:
-#     - remote: 'https://raw.githubusercontent.com/<owner>/git-semver-release/main/gitlab-ci.yml'
-#   # or
-#     - component: gitlab.com/<namespace>/git-semver-release@main
+#     - remote: 'https://raw.githubusercontent.com/michalstutzmann/git-semver-release/main/gitlab-ci.yml'
 #
 #   release:
 #     extends: .git-semver-release
