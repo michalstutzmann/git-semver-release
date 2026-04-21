@@ -7,13 +7,13 @@ spec:
     command:
       type: string
       default: version
-      description: 'Command to run: version, major, minor, patch, or release (conventional commits)'
+      description: 'Command to run: version, major, minor, patch, or conventional (conventional commits)'
       options:
         - version
         - major
         - minor
         - patch
-        - release
+        - conventional
     push:
       type: boolean
       default: false
@@ -47,9 +47,7 @@ spec:
       args=()
 
       command="$[[ inputs.command ]]"
-      if [ "$command" != "release" ]; then
-        args+=("$command")
-      fi
+      args+=("$command")
 
       if [ "$[[ inputs.push ]]" = "true" ]; then
         args+=("--push")

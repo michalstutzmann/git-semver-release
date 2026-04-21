@@ -8,7 +8,7 @@
 #   release:
 #     extends: .git-semver-release
 #     variables:
-#       GSR_COMMAND: "release"
+#       GSR_COMMAND: "conventional"
 #       GSR_PUSH: "true"
 #
 # The calculated version is available as:
@@ -32,9 +32,7 @@
     - |
       args=()
 
-      if [ "$GSR_COMMAND" != "release" ]; then
-        args+=("$GSR_COMMAND")
-      fi
+      args+=("$GSR_COMMAND")
 
       if [ "$GSR_PUSH" = "true" ]; then
         args+=("--push")

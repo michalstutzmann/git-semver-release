@@ -323,6 +323,15 @@ main() {
       local -r message="${args[1]}"
       release "$pre_release_format" "$dirty_indicator" "$tag_prefix" "$message" "$mode" "$push" "$dry_run" "$channel" || return 6
       ;;
+    conventional)
+      if is_dirty; then
+        printf 'error: uncommitted changes found' 1>&2
+        return 5
+      fi
+
+      local -r message="${args[1]}"
+      conventional "$pre_release_format" "$dirty_indicator" "$tag_prefix" "$message" "$push" "$dry_run" "$channel" || return 7
+      ;;
     *)
       if is_dirty; then
         printf 'error: uncommitted changes found' 1>&2

@@ -4,7 +4,7 @@ A single Bash script that versions your project from Git tags using [Semantic Ve
 
 - **`version`** — calculates the current pre-release version without creating any tags
 - **`major` / `minor` / `patch`** — creates an annotated Git tag with the bumped version
-- **(default)** — creates a tag with the bump type determined from [Conventional Commits](https://www.conventionalcommits.org/)
+- **`conventional`** — creates a tag with the bump type determined from [Conventional Commits](https://www.conventionalcommits.org/)
 
 ## Installation
 
@@ -41,9 +41,9 @@ git-semver-release major      # Creates v1.0.0 tag
 ### Conventional Commits
 
 ```shell
-git-semver-release            # Creates v0.0.1 tag for fix:/perf: commits
-git-semver-release            # Creates v0.1.0 tag for feat: commits
-git-semver-release            # Creates v1.0.0 tag for breaking changes (!: or BREAKING CHANGE:)
+git-semver-release conventional  # Creates v0.0.1 tag for fix:/perf: commits
+git-semver-release conventional  # Creates v0.1.0 tag for feat: commits
+git-semver-release conventional  # Creates v1.0.0 tag for breaking changes (!: or BREAKING CHANGE:)
 ```
 
 ## Prerequisites
@@ -96,13 +96,13 @@ Pass `--channel` to create a pre-release tag (e.g. `v1.0.0-alpha`, `v1.0.0-beta`
 | `v0.0.1` | `v1.0.0` | `v0.1.0` |
 | `v1.2.3` | `v2.0.0` | `v1.3.0` |
 
-### *(default)* — Release Using Conventional Commits
+### `conventional` — Release Using Conventional Commits
 
 ```shell
-git-semver-release [--channel CHANNEL] [--push] [--dry-run] [MESSAGE]
+git-semver-release conventional [--channel CHANNEL] [--push] [--dry-run] [MESSAGE]
 ```
 
-When called without `major`, `minor`, or `patch`, the bump type is determined from **all commit messages since the last release** following [Conventional Commits](https://www.conventionalcommits.org/). The highest bump type wins (major > minor > patch). Optional scopes (e.g. `feat(auth):`) are supported. If no commits match a releasable type, the release is skipped with exit code 7.
+The bump type is determined from **all commit messages since the last release** following [Conventional Commits](https://www.conventionalcommits.org/). The highest bump type wins (major > minor > patch). Optional scopes (e.g. `feat(auth):`) are supported. If no commits match a releasable type, the release is skipped with exit code 7.
 
 | Commit message pattern | Bump type | Example |
 |-|-|-|
@@ -176,7 +176,7 @@ This produces versions like `0.0.1-feature-login.3.abcdef0` instead of `0.0.1-al
 
 | Input | Description | Default |
 |-|-|-|
-| `command` | Command to run: `version`, `major`, `minor`, `patch`, or `release` (conventional commits) | `version` |
+| `command` | Command to run: `version`, `major`, `minor`, `patch`, or `conventional` (conventional commits) | `version` |
 | `push` | Push the created tag to the origin remote | `false` |
 | `channel` | Create a pre-release tag with the given channel (e.g. `alpha`, `beta`, `rc`) | |
 | `message` | Annotation message for the tag (supports `$version` placeholder) | |
@@ -214,7 +214,7 @@ This produces versions like `0.0.1-feature-login.3.abcdef0` instead of `0.0.1-al
     ref: ${{ github.ref }}
 - uses: michalstutzmann/git-semver-release@v1
   with:
-    command: release
+    command: conventional
     push: true
 ```
 
@@ -264,7 +264,7 @@ The included `gitlab-ci.yml` provides a hidden job `.git-semver-release` that yo
 
 | Variable | Description | Default |
 |-|-|-|
-| `GSR_COMMAND` | Command to run: `version`, `major`, `minor`, `patch`, or `release` (conventional commits) | `version` |
+| `GSR_COMMAND` | Command to run: `version`, `major`, `minor`, `patch`, or `conventional` (conventional commits) | `version` |
 | `GSR_PUSH` | Push the created tag to the origin remote | `false` |
 | `GSR_CHANNEL` | Create a pre-release tag with the given channel (e.g. `alpha`, `beta`, `rc`) | |
 | `GSR_MESSAGE` | Annotation message for the tag (supports `$version` placeholder) | |
@@ -290,7 +290,7 @@ include:
 release:
   extends: .git-semver-release
   variables:
-    GSR_COMMAND: "release"
+    GSR_COMMAND: "conventional"
     GSR_PUSH: "true"
 ```
 
@@ -333,7 +333,7 @@ For environments where `include: remote` is restricted (e.g. corporate firewalls
 | Input | Type | Description | Default |
 |-|-|-|-|
 | `stage` | `string` | Pipeline stage for the job | `test` |
-| `command` | `string` | Command to run: `version`, `major`, `minor`, `patch`, or `release` (conventional commits) | `version` |
+| `command` | `string` | Command to run: `version`, `major`, `minor`, `patch`, or `conventional` (conventional commits) | `version` |
 | `push` | `boolean` | Push the created tag to the origin remote | `false` |
 | `channel` | `string` | Create a pre-release tag with the given channel (e.g. `alpha`, `beta`, `rc`) | |
 | `message` | `string` | Annotation message for the tag (supports `$version` placeholder) | |
@@ -354,7 +354,7 @@ include:
 include:
   - component: gitlab.com/<namespace>/git-semver-release/git-semver-release@main
     inputs:
-      command: release
+      command: conventional
       push: true
 ```
 

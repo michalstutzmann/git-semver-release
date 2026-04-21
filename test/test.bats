@@ -102,7 +102,7 @@ teardown() {
   # Create initial commit
   commit 'fix: initial fix'
 
-  run ./git-semver-release 'Initial'
+  run ./git-semver-release conventional 'Initial'
   assert_success
   assert_output '0.0.1'
 
@@ -235,7 +235,7 @@ teardown() {
   # Create conventional commit
   commit 'feat: initial feature'
 
-  run ./git-semver-release 'Release'
+  run ./git-semver-release conventional 'Release'
   assert_success
   run git tag --points-at HEAD
   assert_output --regexp '^v0\.1\.0$'
@@ -251,7 +251,7 @@ teardown() {
   # Create conventional commit
   commit 'fix: fix'
 
-  run ./git-semver-release 'Release'
+  run ./git-semver-release conventional 'Release'
   assert_success
   run git tag --points-at HEAD
   assert_output --regexp '^v0\.0\.1$'
@@ -267,7 +267,7 @@ teardown() {
   # Create conventional commit
   commit 'feat: feature'
 
-  run ./git-semver-release 'Release'
+  run ./git-semver-release conventional 'Release'
   assert_success
   run git tag --points-at HEAD
   assert_output --regexp '^v0\.1\.0$'
@@ -283,7 +283,7 @@ teardown() {
   # Create scoped conventional commit
   commit 'feat(auth): add login'
 
-  run ./git-semver-release 'Release'
+  run ./git-semver-release conventional 'Release'
   assert_success
   run git tag --points-at HEAD
   assert_output --regexp '^v0\.1\.0$'
@@ -299,7 +299,7 @@ teardown() {
   # Create conventional commit
   commit 'feat!: feature'
 
-  run ./git-semver-release 'Release'
+  run ./git-semver-release conventional 'Release'
   assert_success
   run git tag --points-at HEAD
   assert_output --regexp '^v1\.0\.0$'
@@ -315,7 +315,7 @@ teardown() {
   # Create scoped conventional commit with bang
   commit 'refactor(api)!: redesign endpoints'
 
-  run ./git-semver-release 'Release'
+  run ./git-semver-release conventional 'Release'
   assert_success
   run git tag --points-at HEAD
   assert_output --regexp '^v1\.0\.0$'
@@ -331,7 +331,7 @@ teardown() {
   # Create conventional commit
   commit $'feat: feature\n\nBREAKING CHANGE: breaking change'
 
-  run ./git-semver-release 'Release'
+  run ./git-semver-release conventional 'Release'
   assert_success
   run git tag --points-at HEAD
   assert_output --regexp '^v1\.0\.0$'
@@ -349,7 +349,7 @@ teardown() {
   commit 'feat: new feature'
   commit 'fix: second fix'
 
-  run ./git-semver-release 'Release'
+  run ./git-semver-release conventional 'Release'
   assert_success
   run git tag --points-at HEAD
   assert_output --regexp '^v0\.1\.0$'
@@ -367,7 +367,7 @@ teardown() {
   commit 'feat!: breaking feature'
   commit 'fix: small fix'
 
-  run ./git-semver-release 'Release'
+  run ./git-semver-release conventional 'Release'
   assert_success
   run git tag --points-at HEAD
   assert_output --regexp '^v1\.0\.0$'
@@ -413,7 +413,7 @@ teardown() {
   commit 'feat: add search'
   commit 'fix: typo'
 
-  run ./git-semver-release 'Release'
+  run ./git-semver-release conventional 'Release'
   assert_success
   run git tag --points-at HEAD
   assert_output --regexp '^v1\.1\.0$'
@@ -429,7 +429,7 @@ teardown() {
   # Create a fix commit
   commit 'fix: typo'
 
-  run ./git-semver-release 'Release'
+  run ./git-semver-release conventional 'Release'
   assert_success
   run git tag --points-at HEAD
   assert_output --regexp '^v1\.0\.1$'
@@ -445,7 +445,7 @@ teardown() {
   # Create a perf commit
   commit 'perf: optimize query'
 
-  run ./git-semver-release 'Release'
+  run ./git-semver-release conventional 'Release'
   assert_success
   run git tag --points-at HEAD
   assert_output --regexp '^v1\.0\.1$'
@@ -480,7 +480,7 @@ teardown() {
   commit 'chore: update deps'
   commit 'docs: update readme'
 
-  run --separate-stderr ./git-semver-release
+  run --separate-stderr ./git-semver-release conventional
   assert_failure 7
   assert_stderr 'error: no releasable changes found'
 }
@@ -495,7 +495,7 @@ teardown() {
   # Create a non-conventional commit
   commit 'update something'
 
-  run --separate-stderr ./git-semver-release
+  run --separate-stderr ./git-semver-release conventional
   assert_failure 7
   assert_stderr 'error: no releasable changes found'
 }
@@ -540,7 +540,7 @@ teardown() {
   # Create a non-conventional commit with bang
   commit 'this is not conventional!: something'
 
-  run --separate-stderr ./git-semver-release
+  run --separate-stderr ./git-semver-release conventional
   assert_failure 7
   assert_stderr 'error: no releasable changes found'
 }
@@ -555,7 +555,7 @@ teardown() {
   # Create a commit that starts with 'feat' but is not a conventional commit
   commit 'featuring: new stuff'
 
-  run --separate-stderr ./git-semver-release
+  run --separate-stderr ./git-semver-release conventional
   assert_failure 7
   assert_stderr 'error: no releasable changes found'
 }
@@ -585,7 +585,7 @@ teardown() {
   # Create conventional commit
   commit 'feat: new feature'
 
-  run --separate-stderr ./git-semver-release --dry-run
+  run --separate-stderr ./git-semver-release conventional --dry-run
   assert_success
   assert_stderr 'Would release 1.1.0'
 
@@ -624,7 +624,7 @@ teardown() {
   # Create another commit
   commit 'fix: bug fix'
 
-  run ./git-semver-release
+  run ./git-semver-release conventional
   assert_success
   assert_output '1.0.1'
   run git tag --points-at HEAD
@@ -692,7 +692,7 @@ teardown() {
   # Create conventional commit
   commit 'feat: new feature'
 
-  run ./git-semver-release --channel rc
+  run ./git-semver-release conventional --channel rc
   assert_success
   assert_output '1.1.0-rc'
   run git tag --points-at HEAD

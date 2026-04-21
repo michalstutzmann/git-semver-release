@@ -6,7 +6,7 @@ branding:
   color: 'blue'
 inputs:
   command:
-    description: 'Command to run: version, major, minor, patch, or release (conventional commits). Default: version'
+    description: 'Command to run: version, major, minor, patch, or conventional (conventional commits). Default: version'
     required: false
     default: 'version'
   push:
@@ -40,9 +40,7 @@ runs:
         args=()
 
         command="${{ inputs.command }}"
-        if [ "$command" != "release" ]; then
-          args+=("$command")
-        fi
+        args+=("$command")
 
         if [ "${{ inputs.push }}" = "true" ]; then
           args+=("--push")
