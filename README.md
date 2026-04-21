@@ -104,6 +104,15 @@ Use something else if you need:
 - Registry publishing orchestration across npm, PyPI, Maven Central, and similar ecosystems.
 - Full changelog management beyond annotated Git tags.
 
+Quick comparison:
+
+| Tool | Best for | Tradeoff |
+|-|-|-|
+| `git-semver-release` | Small Git-based versioning and tagging in polyglot repos | You handle downstream release publishing yourself |
+| `semantic-release` | Full automated releases to package registries and hosting platforms | Requires a larger Node-based release setup |
+| `release-please` | PR-driven release automation and release notes on GitHub | More opinionated around GitHub workflows and release PRs |
+| `git describe` | Raw Git-derived identifiers for builds and debugging | Not a SemVer release workflow and does not create release tags |
+
 ## Installation
 
 ### Homebrew
