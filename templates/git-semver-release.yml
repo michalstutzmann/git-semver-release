@@ -1,0 +1,73 @@
+spec:
+  inputs:
+    stage:
+      type: string
+      default: test
+      description: 'Pipeline stage for the job'
+    command:
+      type: string
+      default: version
+      description: 'Command to run: version, major, minor, patch, or release (conventional commits)'
+      options:
+        - version
+        - major
+        - minor
+        - patch
+        - release
+    push:
+      type: boolean
+      default: false
+      description: 'Push the created tag to the origin remote'
+    channel:
+      type: string
+      default: ''
+      description: 'Create a pre-release tag with the given channel (e.g. alpha, beta, rc)'
+    message:
+      type: string
+      default: ''
+      description: 'Annotation message for the tag (supports $version placeholder)'
+    script_url:
+      type: string
+      default: 'https://raw.githubusercontent.com/michalstutzmann/git-semver-release/main/git-semver-release'
+      description: 'URL to download the git-semver-release script from'
+---
+
+"git-semver-release":
+  image: alpine:latest
+  stage: $[[ inputs.stage ]]
+  variables:
+    GIT_DEPTH: 0
+    GIT_STRATEGY: clone
+  before_script:
+    - apk add --no-cache bash git curl
+    - curl -fsSL "$[[ inputs.script_url ]]" -o /usr/local/bin/git-semver-release
+    - chmod +x /usr/local/bin/git-semver-release
+  script:
+    - |
+      args=()
+
+      command="$[[ inputs.command ]]"
+      if [ "$command" != "release" ]; then
+        args+=("$command")
+      fi
+
+      if [ "$[[ inputs.push ]]" = "true" ]; then
+        args+=("--push")
+      fi
+
+      channel="$[[ inputs.channel ]]"
+      if [ -n "$channel" ]; then
+        args+=("--channel" "$channel")
+      fi
+
+      message="$[[ inputs.message ]]"
+      if [ -n "$message" ]; then
+        args+=("$message")
+      fi
+
+      version=$(git-semver-release "${args[@]}")
+      printf 'VERSION=%s\n' "$version" >> version.env
+      printf '%s\n' "$version"
+  artifacts:
+    reports:
+      dotenv: version.env

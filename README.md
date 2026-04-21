@@ -245,24 +245,26 @@ The action adds `git-semver-release` to `PATH`, so it can be called directly in 
 - run: echo "$(git-semver-release version)"
 ```
 
-## GitLab CI
+## GitLab CI Component
 
-The included `gitlab-ci.yml` provides a hidden job `.git-semver-release` that you can extend in your pipeline.
+Available as a [GitLab CI/CD Component](https://docs.gitlab.com/ee/ci/components/) for easy integration with typed inputs and validation.
 
-### Variables
+### Inputs
 
-| Variable | Description | Default |
-|-|-|-|
-| `GSR_COMMAND` | Command to run: `version`, `major`, `minor`, `patch`, or `release` (conventional commits) | `version` |
-| `GSR_PUSH` | Push the created tag to the origin remote | `false` |
-| `GSR_CHANNEL` | Create a pre-release tag with the given channel (e.g. `alpha`, `beta`, `rc`) | |
-| `GSR_MESSAGE` | Annotation message for the tag (supports `$version` placeholder) | |
+| Input | Type | Description | Default |
+|-|-|-|-|
+| `stage` | `string` | Pipeline stage for the job | `test` |
+| `command` | `string` | Command to run: `version`, `major`, `minor`, `patch`, or `release` (conventional commits) | `version` |
+| `push` | `boolean` | Push the created tag to the origin remote | `false` |
+| `channel` | `string` | Create a pre-release tag with the given channel (e.g. `alpha`, `beta`, `rc`) | |
+| `message` | `string` | Annotation message for the tag (supports `$version` placeholder) | |
+| `script_url` | `string` | URL to download the git-semver-release script from | *(GitHub raw URL)* |
 
 ### Outputs
 
 The calculated version is exported as `$VERSION` via a [dotenv artifact](https://docs.gitlab.com/ee/ci/variables/#pass-an-environment-variable-to-another-job), making it available to all downstream jobs.
 
-> **Important:** The job sets `GIT_DEPTH: 0` and `GIT_STRATEGY: clone` so the tool can access all tags and commit history.
+> **Important:** The component sets `GIT_DEPTH: 0` and `GIT_STRATEGY: clone` so the tool can access all tags and commit history.
 
 ### Examples
 
@@ -270,53 +272,64 @@ The calculated version is exported as `$VERSION` via a [dotenv artifact](https:/
 
 ```yaml
 include:
-  - local: 'gitlab-ci.yml'
+  - component: gitlab.com/<namespace>/git-semver-release/git-semver-release@main
 
-semver:
-  extends: .git-semver-release
+stages:
+  - test
+
 ```
 
 #### Create a release using conventional commits
 
 ```yaml
 include:
-  - local: 'gitlab-ci.yml'
-
-release:
-  extends: .git-semver-release
-  variables:
-    GSR_COMMAND: "release"
-    GSR_PUSH: "true"
+  - component: gitlab.com/<namespace>/git-semver-release/git-semver-release@main
+    inputs:
+      command: release
+      push: true
 ```
 
 #### Create a minor release with a channel
 
 ```yaml
 include:
-  - local: 'gitlab-ci.yml'
-
-release:
-  extends: .git-semver-release
-  variables:
-    GSR_COMMAND: "minor"
-    GSR_CHANNEL: "beta"
-    GSR_PUSH: "true"
+  - component: gitlab.com/<namespace>/git-semver-release/git-semver-release@main
+    inputs:
+      command: minor
+      channel: beta
+      push: true
 ```
 
 #### Use the version in a downstream job
 
 ```yaml
 include:
-  - local: 'gitlab-ci.yml'
+  - component: gitlab.com/<namespace>/git-semver-release/git-semver-release@main
 
-semver:
-  extends: .git-semver-release
+stages:
+  - test
+  - deploy
 
 deploy:
   stage: deploy
-  needs: [semver]
+  needs: [git-semver-release]
   script:
     - echo "Deploying version $VERSION"
+```
+
+### GitLab CI (Legacy)
+
+The `gitlab-ci.yml` file is still available for projects that prefer the `extends` pattern:
+
+```yaml
+include:
+  - remote: 'https://raw.githubusercontent.com/<owner>/git-semver-release/main/gitlab-ci.yml'
+
+release:
+  extends: .git-semver-release
+  variables:
+    GSR_COMMAND: "release"
+    GSR_PUSH: "true"
 ```
 
 ## CI Examples
