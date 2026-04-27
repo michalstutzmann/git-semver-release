@@ -62,8 +62,8 @@ spec:
       fi
 
       version=$(git-semver-release "${args[@]}")
-      printf 'VERSION=%s\n' "$version" >> git-semver-release.env
+      printf 'VERSION=%s\n' "$version" >> version.env
       printf '%s\n' "$version"
   artifacts:
     reports:
-      dotenv: git-semver-release.env
+      dotenv: version.env
