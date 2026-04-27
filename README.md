@@ -394,7 +394,6 @@ Inputs:
 | `push` | `boolean` | Push the created tag to `origin` | `false` |
 | `channel` | `string` | Pre-release channel such as `alpha`, `beta`, `rc` | |
 | `message` | `string` | Tag annotation message, supports `$version` | |
-| `script_url` | `string` | URL used to download `git-semver-release` | GitHub raw URL |
 
 Outputs:
 

@@ -27,21 +27,15 @@ spec:
       type: string
       default: ''
       description: 'Annotation message for the tag (supports $version placeholder)'
-    script_url:
-      type: string
-      default: 'https://raw.githubusercontent.com/michalstutzmann/git-semver-release/$VERSION/git-semver-release'
-      description: 'URL to download the git-semver-release script from'
 ---
-"git-semver-release":
-  image: alpine:latest
+'git-semver-release':
+  image:
+    name: 'ghcr.io/michalstutzmann/git-semver-release:latest'
+    entrypoint: ['']
   stage: $[[ inputs.stage ]]
   variables:
     GIT_DEPTH: 0
     GIT_STRATEGY: clone
-  before_script:
-    - apk add --no-cache bash git curl
-    - curl -fsSL "$[[ inputs.script_url ]]" -o /usr/local/bin/git-semver-release
-    - chmod +x /usr/local/bin/git-semver-release
   script:
     - |
       args=()
