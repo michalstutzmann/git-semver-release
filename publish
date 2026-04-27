@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+
+docker buildx build \
+    --platform linux/amd64,linux/arm64 \
+    --push \
+    --tag "ghcr.io/michalstutzmann/git-semver-release:$(git-semver-release version)" \
+    .
