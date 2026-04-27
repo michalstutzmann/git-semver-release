@@ -5,6 +5,10 @@ spec:
       type: string
       default: test
       description: 'Pipeline stage for the job'
+    version:
+      type: string
+      default: latest
+      description: 'Version of the git-semver-release Docker image to use'
     command:
       type: string
       default: version
@@ -30,7 +34,7 @@ spec:
 ---
 'git-semver-release':
   image:
-    name: 'ghcr.io/michalstutzmann/git-semver-release:latest'
+    name: 'ghcr.io/michalstutzmann/git-semver-release:$[[ inputs.version ]]'
     entrypoint: ['']
   stage: $[[ inputs.stage ]]
   variables:
@@ -58,8 +62,8 @@ spec:
       fi
 
       version=$(git-semver-release "${args[@]}")
-      printf 'VERSION=%s\n' "$version" >> version.env
+      printf 'VERSION=%s\n' "$version" >> git-semver-release.env
       printf '%s\n' "$version"
   artifacts:
     reports:
-      dotenv: version.env
+      dotenv: git-semver-release.env

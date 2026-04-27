@@ -390,6 +390,7 @@ Inputs:
 | Input | Type | Description | Default |
 |-|-|-|-|
 | `stage` | `string` | Pipeline stage for the job | `test` |
+| `version` | `string` | Version of the `git-semver-release` Docker image to use | `latest` |
 | `command` | `string` | `version`, `major`, `minor`, `patch`, or `conventional` | `version` |
 | `push` | `boolean` | Push the created tag to `origin` | `false` |
 | `channel` | `string` | Pre-release channel such as `alpha`, `beta`, `rc` | |
