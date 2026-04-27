@@ -6,7 +6,7 @@
 
 Version your project from Git tags with a single Bash script. No language-specific release framework, no plugins, no runtime dependencies beyond [Git 2.13+](https://git-scm.com/) and [Bash 4+](https://www.gnu.org/software/bash/).
 
-Use it as a local CLI, a [GitHub Action](#github-action), or a [GitLab CI job](#gitlab-ci).
+Use it as a local CLI, a [Docker image](#docker), a [GitHub Action](#github-action), or a [GitLab CI job](#gitlab-ci).
 
 ## Quickstart
 
@@ -108,7 +108,7 @@ Quick comparison:
 
 | Tool | Best for | Tradeoff |
 |-|-|-|
-| `git-semver-release` | Small Git-based versioning and tagging in polyglot repos | You handle downstream release publishing yourself |
+| `git-semver-release` | Small Git-based versioning and tagging in polyglot repos, with Docker, GitHub Actions, and GitLab CI integrations | You handle downstream release publishing yourself |
 | `semantic-release` | Full automated releases to package registries and hosting platforms | Requires a larger Node-based release setup |
 | `release-please` | PR-driven release automation and release notes on GitHub | More opinionated around GitHub workflows and release PRs |
 | `git describe` | Raw Git-derived identifiers for builds and debugging | Not a SemVer release workflow and does not create release tags |
@@ -130,6 +130,28 @@ curl -fsSL https://raw.githubusercontent.com/michalstutzmann/git-semver-release/
 ```
 
 Make sure `~/.local/bin` is in your `PATH`.
+
+### Docker
+
+A prebuilt image is published to GitHub Container Registry: [`ghcr.io/michalstutzmann/git-semver-release`](https://github.com/michalstutzmann/git-semver-release/pkgs/container/git-semver-release). Tags include `latest`, `edge` (built from `main`), and one per release (`X.Y.Z`, `X.Y`, `X`).
+
+```shell
+docker run --rm -v "$PWD:/home" ghcr.io/michalstutzmann/git-semver-release version
+```
+
+Mount the working tree to `/home` (the image's `WORKDIR`). The default command is `version`, so you can also run:
+
+```shell
+docker run --rm -v "$PWD:/home" ghcr.io/michalstutzmann/git-semver-release
+```
+
+Pass any other command and flags after the image name:
+
+```shell
+docker run --rm -v "$PWD:/home" ghcr.io/michalstutzmann/git-semver-release conventional --dry-run
+```
+
+To push tags created inside the container, mount your Git credentials and pass `--push` as you would locally.
 
 ## Command Reference
 
