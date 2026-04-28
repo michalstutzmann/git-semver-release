@@ -8,21 +8,5 @@ jobs:
   publish:
     uses: ./.github/workflows/publish.yml
     permissions:
-      contents: read
-      packages: write
-  release:
-    needs: publish
-    runs-on: ubuntu-latest
-    permissions:
       contents: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Create GitHub Release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release create "${GITHUB_REF_NAME}" \
-            --title "${GITHUB_REF_NAME}" \
-            --notes-from-tag \
-            git-semver-release
+      packages: write

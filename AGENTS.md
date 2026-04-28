@@ -38,7 +38,7 @@ The entire tool is a single Bash script with no external dependencies beyond Git
 
 **Command dispatch:** `main()` parses `.git-semver-release.properties` (if present), processes CLI flags (`--push`, `--channel`, `--dry-run`), then routes to a command function.
 
-**Commands:** `version` (calculates version without tagging), `major`/`minor`/`patch` (create release tags), `conventional` (auto-detect bump type from commit messages), `create-config-file`. Any unrecognized command (or no command) falls through to `version` as the default.
+**Commands:** `version` (calculates version without tagging), `major`/`minor`/`patch` (create release tags), `conventional` (auto-detect bump type from commit messages), `release-tag` (prints the tag at HEAD when on a release), `create-config-file`. Any unrecognized command (or no command) falls through to `version` as the default.
 
 **Version calculation flow:** `get_latest_release_tag()` finds the last stable tag → `get_describe_output()` gets distance from that tag → `version()` computes the pre-release version string incorporating branch name, commit count, and channel.
 

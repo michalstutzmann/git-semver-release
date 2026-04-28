@@ -260,6 +260,18 @@ $changelog"
   fi
 }
 
+release_tag() {
+  local -r pre_release_format="$1"
+  local -r dirty_indicator="$2"
+  local -r tag_prefix="$3"
+
+  local current_version
+  current_version="$(version "$pre_release_format" "$dirty_indicator" "$tag_prefix")"
+
+  [[ "$current_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || return 1
+  printf '%s\n' "${tag_prefix}${current_version}"
+}
+
 conventional() {
   local -r pre_release_format="$1"
   local -r dirty_indicator="$2"
@@ -340,6 +352,9 @@ main() {
 
        version "$pre_release_format" "$dirty_indicator" "$tag_prefix" "$output_format" || return 4
        ;;
+    release-tag)
+      release_tag "$pre_release_format" "$dirty_indicator" "$tag_prefix"
+      ;;
     major | minor | patch)
       if is_dirty; then
         printf 'error: uncommitted changes found' 1>&2

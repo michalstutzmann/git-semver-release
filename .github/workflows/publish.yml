@@ -3,7 +3,7 @@ name: Publish
 on:
   workflow_call:
 permissions:
-  contents: read
+  contents: write
   packages: write
 jobs:
   publish:
@@ -35,4 +35,6 @@ jobs:
       - name: Set up Git SemVer Release
         uses: michalstutzmann/git-semver-release@main
       - name: Publish to GitHub Packages
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./publish

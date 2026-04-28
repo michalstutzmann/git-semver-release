@@ -226,6 +226,14 @@ When multiple commits are present, the highest bump type wins:
 | `v1.0.0` | `feat: add search` then `feat!: new API` then `fix: bug` | `v2.0.0` |
 | `v1.0.0` | `chore: update deps` then `docs: update readme` | *(skipped)* |
 
+### `release-tag`
+
+```shell
+git-semver-release release-tag
+```
+
+Prints the tag at `HEAD` (e.g. `v1.2.3`) when it points to a release. Exits with code `1` otherwise.
+
 ### `create-config-file`
 
 ```shell
