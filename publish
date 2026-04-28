@@ -1,8 +1,8 @@
 #!/usr/bin/env sh
 
-VERSION="$(git-semver-release version)"
+VERSION="$(./git-semver-release version)"
 
-if TAG="$(git-semver-release release-tag)"; then
+if TAG="$(./git-semver-release release-tag)"; then
     gh release create "${TAG}" \
         --title "${VERSION}" \
         --notes-from-tag \
