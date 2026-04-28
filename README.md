@@ -1,9 +1,5 @@
 # Git SemVer Release
 
-[![Test](https://github.com/michalstutzmann/git-semver-release/actions/workflows/test.yml/badge.svg)](https://github.com/michalstutzmann/git-semver-release/actions/workflows/test.yml)
-[![Latest release](https://img.shields.io/github/v/release/michalstutzmann/git-semver-release)](https://github.com/michalstutzmann/git-semver-release/releases)
-[![License](https://img.shields.io/github/license/michalstutzmann/git-semver-release)](LICENSE)
-
 Version your project from Git tags with a single Bash script. No language-specific release framework, no plugins, no runtime dependencies beyond [Git 2.13+](https://git-scm.com/) and [Bash 4+](https://www.gnu.org/software/bash/).
 
 Use it as a local CLI, a [Docker image](#docker), a [GitHub Action](#github-action), or a [GitLab CI job](#gitlab-ci).
