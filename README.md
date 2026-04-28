@@ -2,7 +2,7 @@
 
 Version your project from Git tags with a single Bash script. No language-specific release framework, no plugins, no runtime dependencies beyond [Git 2.13+](https://git-scm.com/) and [Bash 4+](https://www.gnu.org/software/bash/).
 
-Use it as a local CLI, a [Docker image](#docker), a [GitHub Action](#github-action), or a [GitLab CI job](#gitlab-ci).
+Use it as a local CLI or a [Docker image](#docker).
 
 ## Quickstart
 
@@ -37,7 +37,7 @@ git-semver-release patch --dry-run
 
 - Single-file Bash tool that works across polyglot repos.
 - Derives versions directly from Git tags and history.
-- Works locally, in Docker builds, in GitHub Actions, and in GitLab CI.
+- Works locally and in Docker builds.
 - Supports both explicit bump commands and [Conventional Commits](https://www.conventionalcommits.org/).
 - Generates pre-release versions from branch and commit metadata without extra services.
 
@@ -104,7 +104,7 @@ Quick comparison:
 
 | Tool | Best for | Tradeoff |
 |-|-|-|
-| `git-semver-release` | Small Git-based versioning and tagging in polyglot repos, with Docker, GitHub Actions, and GitLab CI integrations | You handle downstream release publishing yourself |
+| `git-semver-release` | Small Git-based versioning and tagging in polyglot repos, with a Docker image | You handle downstream release publishing yourself |
 | `semantic-release` | Full automated releases to package registries and hosting platforms | Requires a larger Node-based release setup |
 | `release-please` | PR-driven release automation and release notes on GitHub | More opinionated around GitHub workflows and release PRs |
 | `git describe` | Raw Git-derived identifiers for builds and debugging | Not a SemVer release workflow and does not create release tags |
@@ -238,174 +238,6 @@ git-semver-release create-config-file
 
 Creates `.git-semver-release.properties` in the current directory with default values.
 
-## GitHub Action
-
-Start with a copy-paste workflow:
-
-```yaml
-- uses: actions/checkout@v4
-  with:
-    fetch-depth: 0
-    fetch-tags: true
-    ref: ${{ github.ref }}
-- uses: michalstutzmann/git-semver-release@v1
-  id: git-semver-release
-- run: echo "${{ steps.git-semver-release.outputs.version }}"
-```
-
-Release from Conventional Commits:
-
-```yaml
-- uses: actions/checkout@v4
-  with:
-    fetch-depth: 0
-    fetch-tags: true
-    ref: ${{ github.ref }}
-- uses: michalstutzmann/git-semver-release@v1
-  with:
-    command: conventional
-    push: true
-```
-
-Inputs:
-
-| Input | Description | Default |
-|-|-|-|
-| `command` | `version`, `major`, `minor`, `patch`, or `conventional` | `version` |
-| `push` | Push the created tag to `origin` | `false` |
-| `channel` | Pre-release channel such as `alpha`, `beta`, `rc` | |
-| `message` | Tag annotation message, supports `$version` | |
-
-Outputs:
-
-| Output | Description |
-|-|-|
-| `version` | The calculated version |
-
-Important: use `fetch-depth: 0`, `fetch-tags: true`, and `ref: ${{ github.ref }}` on `actions/checkout` so the tool can see tags and full history.
-
-The action also adds `git-semver-release` to `PATH`, so you can call it directly in later steps:
-
-```yaml
-- uses: actions/checkout@v4
-  with:
-    fetch-depth: 0
-    fetch-tags: true
-    ref: ${{ github.ref }}
-- uses: michalstutzmann/git-semver-release@v1
-- run: echo "$(git-semver-release version)"
-```
-
-## GitLab CI
-
-Two integration options are available depending on your setup.
-
-### Option 1: `include: remote`
-
-Use the hosted GitLab template directly from GitHub:
-
-```yaml
-include:
-  - remote: 'https://raw.githubusercontent.com/michalstutzmann/git-semver-release/main/gitlab-ci.yml'
-```
-
-The included template downloads the latest script and exposes a hidden job named `.git-semver-release`.
-
-Calculate the current version:
-
-```yaml
-include:
-  - remote: 'https://raw.githubusercontent.com/michalstutzmann/git-semver-release/main/gitlab-ci.yml'
-
-semver:
-  extends: .git-semver-release
-```
-
-Create a release using Conventional Commits:
-
-```yaml
-include:
-  - remote: 'https://raw.githubusercontent.com/michalstutzmann/git-semver-release/main/gitlab-ci.yml'
-
-release:
-  extends: .git-semver-release
-  variables:
-    GSR_COMMAND: "conventional"
-    GSR_PUSH: "true"
-```
-
-Use the calculated version in a downstream job:
-
-```yaml
-include:
-  - remote: 'https://raw.githubusercontent.com/michalstutzmann/git-semver-release/main/gitlab-ci.yml'
-
-semver:
-  extends: .git-semver-release
-
-deploy:
-  stage: deploy
-  needs: [semver]
-  script:
-    - echo "Deploying version $VERSION"
-```
-
-Variables:
-
-| Variable | Description | Default |
-|-|-|-|
-| `GSR_COMMAND` | `version`, `major`, `minor`, `patch`, or `conventional` | `version` |
-| `GSR_PUSH` | Push the created tag to `origin` | `false` |
-| `GSR_CHANNEL` | Pre-release channel such as `alpha`, `beta`, `rc` | |
-| `GSR_MESSAGE` | Tag annotation message, supports `$version` | |
-| `GSR_SCRIPT_URL` | Script download URL | GitHub raw URL |
-
-### Option 2: GitLab CI/CD Component
-
-If your environment prefers GitLab components, mirror this repo to GitLab and include the component:
-
-```yaml
-include:
-  - component: gitlab.com/<namespace>/git-semver-release/git-semver-release@main
-    inputs:
-      command: conventional
-      push: true
-```
-
-Use the version in a downstream job:
-
-```yaml
-include:
-  - component: gitlab.com/<namespace>/git-semver-release/git-semver-release@main
-
-stages:
-  - test
-  - deploy
-
-deploy:
-  stage: deploy
-  needs: [git-semver-release]
-  script:
-    - echo "Deploying version $VERSION"
-```
-
-Inputs:
-
-| Input | Type | Description | Default |
-|-|-|-|-|
-| `stage` | `string` | Pipeline stage for the job | `test` |
-| `version` | `string` | Version of the `git-semver-release` Docker image to use | `latest` |
-| `command` | `string` | `version`, `major`, `minor`, `patch`, or `conventional` | `version` |
-| `push` | `boolean` | Push the created tag to `origin` | `false` |
-| `channel` | `string` | Pre-release channel such as `alpha`, `beta`, `rc` | |
-| `message` | `string` | Tag annotation message, supports `$version` | |
-
-Outputs:
-
-The calculated version is exported as `$VERSION` via a [dotenv artifact](https://docs.gitlab.com/ee/ci/variables/#pass-an-environment-variable-to-another-job), so downstream jobs can reuse it directly.
-
-Important: both GitLab options set `GIT_DEPTH: 0` and `GIT_STRATEGY: clone` so tags and history are available.
-
 ## Configuration
 
 Customize behavior with `.git-semver-release.properties`:
@@ -468,18 +300,6 @@ sbt "set version := \"$(git-semver-release version)\"" publish
 
 ```shell
 docker build --push --tag "myregistry/myimage:$(git-semver-release version)" .
-```
-
-### GitHub Actions + Docker
-
-```yaml
-- uses: actions/checkout@v4
-  with:
-    fetch-depth: 0
-    fetch-tags: true
-    ref: ${{ github.ref }}
-- uses: michalstutzmann/git-semver-release@v1
-- run: docker build --push --tag "myregistry/myimage:$(git-semver-release version)" .
 ```
 
 ## Exit Codes
