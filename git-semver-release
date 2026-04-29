@@ -33,7 +33,7 @@ get_git_branch() {
 }
 
 is_dirty() {
-  if [ -n "$(git status --porcelain --untracked-files=no 2>/dev/null)" ]; then
+  if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
     return 0
   else
     return 1
@@ -256,11 +256,11 @@ $changelog"
   printf '%s\n' "$version"
 
   if (( push )); then
-    git push origin "$tag" 1>&2 || return 1
+    git push origin HEAD "$tag" 1>&2 || return 1
   fi
 }
 
-version_tag() {
+release_tag() {
   local -r pre_release_format="$1"
   local -r dirty_indicator="$2"
   local -r tag_prefix="$3"
@@ -352,8 +352,8 @@ main() {
 
        version "$pre_release_format" "$dirty_indicator" "$tag_prefix" "$output_format" || return 4
        ;;
-    version-tag)
-      version_tag "$pre_release_format" "$dirty_indicator" "$tag_prefix"
+    release-tag)
+      release_tag "$pre_release_format" "$dirty_indicator" "$tag_prefix"
       ;;
     major | minor | patch)
       if is_dirty; then

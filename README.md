@@ -65,7 +65,7 @@ git-semver-release minor
 git-semver-release major
 ```
 
-These commands create an annotated Git tag and fail if the working tree has uncommitted changes to tracked files. Untracked files are ignored.
+These commands create an annotated Git tag and fail if the working tree is dirty.
 
 ### Create a release from Conventional Commits
 
@@ -185,7 +185,7 @@ Changes:
 
 If you pass `MESSAGE`, it replaces the default annotation entirely. Use `$version` as a placeholder, for example `"Release $version"`.
 
-`--channel` creates a pre-release tag such as `v1.0.0-beta`. `--push` pushes the created tag to `origin`. `--dry-run` prints what would be released without tagging or pushing.
+`--channel` creates a pre-release tag such as `v1.0.0-beta`. `--push` pushes the current branch and the created tag to `origin`. `--dry-run` prints what would be released without tagging or pushing.
 
 | Latest release tag | `patch` | `minor` | `major` |
 |-|-|-|-|
@@ -252,7 +252,7 @@ tag_prefix=v
 | Property | Default | Description |
 |-|-|-|
 | `channel` | `alpha` | Default pre-release channel |
-| `dirty_indicator` | `dirty` | Added when the working tree has uncommitted changes to tracked files (untracked files are ignored) |
+| `dirty_indicator` | `dirty` | Added when the working tree has uncommitted changes |
 | `pre_release_format` | `$channel$separator...` | Template for pre-release identifiers |
 | `tag_prefix` | `v` | Prefix for Git tags |
 
@@ -264,7 +264,7 @@ Variables available in `pre_release_format`:
 | `$separator` | `.` |
 | `$commit_count` | Number of commits since the last release tag |
 | `$commit_short_sha` | Abbreviated SHA of the latest commit |
-| `$dirty_indicator` | `dirty_indicator` when there are uncommitted changes to tracked files, otherwise empty (untracked files are ignored) |
+| `$dirty_indicator` | `dirty_indicator` when the tree is dirty, otherwise empty |
 | `$branch` | Current branch with non-alphanumeric characters normalized to `-` |
 
 Example branch-based pre-release:
@@ -311,7 +311,7 @@ docker build --push --tag "myregistry/myimage:$(git-semver-release version)" .
 | 2 | No commits yet |
 | 3 | Failed to create config file |
 | 4 | Failed to calculate version |
-| 5 | Uncommitted changes to tracked files found |
+| 5 | Uncommitted changes found |
 | 6 | Failed to create release tag |
 | 7 | No releasable changes found |
 

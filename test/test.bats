@@ -32,7 +32,7 @@ teardown() {
   assert_stderr 'error: no commits yet'
 }
 
-@test "Ignore untracked files when checking for dirty tree" {
+@test "Detect dirty tree with untracked files" {
   # Initialize Git repository
   initialize
   # Create initial commit
@@ -42,7 +42,7 @@ teardown() {
 
   run ./git-semver-release version
   assert_success
-  refute_output --regexp '\.dirty$'
+  assert_output --regexp '\.dirty$'
 }
 
 @test "Detect dirty tree with unstaged modifications" {
@@ -451,7 +451,7 @@ teardown() {
   assert_output --regexp '^v1\.0\.1$'
 }
 
-@test "Push tag to remote with --push flag" {
+@test "Push tag and branch commits to remote with --push flag" {
   # Initialize bare remote repository
   env -u GIT_DIR -u GIT_WORK_TREE git init --bare tmp/remote
   # Initialize Git repository
@@ -467,6 +467,10 @@ teardown() {
   # Verify tag was pushed to remote
   run env -u GIT_DIR -u GIT_WORK_TREE git -C tmp/remote tag
   assert_output 'v0.0.1'
+
+  # Verify branch commits were pushed to remote
+  run env -u GIT_DIR -u GIT_WORK_TREE git -C tmp/remote rev-parse "$(git rev-parse HEAD)"
+  assert_success
 }
 
 @test "Skip release when all commits are non-releasable" {
