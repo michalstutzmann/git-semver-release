@@ -32,7 +32,7 @@ teardown() {
   assert_stderr 'error: no commits yet'
 }
 
-@test "Detect dirty tree with untracked files" {
+@test "Ignore untracked files when checking for dirty tree" {
   # Initialize Git repository
   initialize
   # Create initial commit
@@ -42,7 +42,7 @@ teardown() {
 
   run ./git-semver-release version
   assert_success
-  assert_output --regexp '\.dirty$'
+  refute_output --regexp '\.dirty$'
 }
 
 @test "Detect dirty tree with unstaged modifications" {
@@ -77,8 +77,8 @@ teardown() {
   initialize
   # Create initial commit
   commit 'Initial'
-  # Create an untracked file
-  printf 'untracked' > tmp/untracked
+  # Modify tracked file without staging
+  printf 'modified' > "$TEST_FILE"
 
   run --separate-stderr ./git-semver-release patch 'Release'
   assert_failure 5
@@ -394,8 +394,8 @@ teardown() {
   tag "v1.0.0"
   # Create another commit
   commit 'Second'
-  # Create an untracked file
-  printf 'untracked' > tmp/untracked
+  # Modify tracked file without staging
+  printf 'modified' > "$TEST_FILE"
 
   run ./git-semver-release version
   assert_success
@@ -639,8 +639,8 @@ teardown() {
   commit 'Initial'
   # Create custom config
   printf 'dirty_indicator=modified\n' > .git-semver-release.properties
-  # Create an untracked file
-  printf 'untracked' > tmp/untracked
+  # Modify tracked file without staging
+  printf 'modified' > "$TEST_FILE"
 
   run ./git-semver-release version
   assert_success
