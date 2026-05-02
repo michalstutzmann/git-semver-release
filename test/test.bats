@@ -179,6 +179,20 @@ teardown() {
   assert_output --regexp '^v0\.0\.1$'
 }
 
+@test "Create patch release when HEAD is at the latest tag" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create initial release tag
+  tag "v1.2.3"
+
+  run ./git-semver-release patch 'Release'
+  assert_success
+  run git tag --points-at HEAD
+  assert_output --partial 'v1.2.4'
+}
+
 @test "Create minor release with previous release" {
   # Initialize Git repository
   initialize
@@ -517,6 +531,61 @@ teardown() {
   assert_output --regexp '^1\.0\.0$'
 }
 
+@test "release-tag prints tag when HEAD is on a release" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create release tag
+  tag "v1.2.3"
+
+  run ./git-semver-release release-tag
+  assert_success
+  assert_output 'v1.2.3'
+}
+
+@test "release-tag prints tag when HEAD is on a release with dirty tree" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create release tag
+  tag "v1.2.3"
+  # Dirty the working tree
+  printf 'modified' > "$TEST_FILE"
+
+  run ./git-semver-release release-tag
+  assert_success
+  assert_output 'v1.2.3'
+}
+
+@test "release-tag exits 8 when HEAD is not on a release" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create release tag
+  tag "v1.2.3"
+  # Move HEAD past the release
+  commit 'Second'
+
+  run ./git-semver-release release-tag
+  assert_failure 8
+  assert_output ''
+}
+
+@test "release-tag ignores pre-release tags at HEAD" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create pre-release tag only (no stable release at HEAD)
+  tag "v1.2.3-alpha.1"
+
+  run ./git-semver-release release-tag
+  assert_failure 8
+}
+
 @test "Create config file" {
   # Initialize Git repository
   initialize
@@ -756,6 +825,129 @@ teardown() {
   # Verify no tag was created
   run git tag
   assert_output ''
+}
+
+@test "Default command without arguments behaves like version" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+
+  run ./git-semver-release
+  assert_success
+  assert_output --regexp '^0\.0\.0-alpha\.1\.[0-9a-f]{7}$'
+}
+
+@test "Push tag with --push flag for conventional release" {
+  # Initialize bare remote repository
+  env -u GIT_DIR -u GIT_WORK_TREE git init --bare tmp/remote
+  # Initialize Git repository
+  initialize
+  git remote add origin "$PWD/tmp/remote"
+  # Create conventional commit
+  commit 'feat: initial feature'
+
+  run --separate-stderr ./git-semver-release conventional --push
+  assert_success
+  assert_output '0.1.0'
+
+  # Verify tag was pushed to remote
+  run env -u GIT_DIR -u GIT_WORK_TREE git -C tmp/remote tag
+  assert_output 'v0.1.0'
+
+  # Verify branch commits were pushed to remote
+  run env -u GIT_DIR -u GIT_WORK_TREE git -C tmp/remote rev-parse "$(git rev-parse HEAD)"
+  assert_success
+}
+
+@test "Use custom pre_release_format with branch variable from config" {
+  # Initialize Git repository
+  initialize
+  # Use a non-default branch name
+  git checkout -b feature/login 2>/dev/null
+  # Custom format using $branch
+  printf 'pre_release_format=$branch$separator$commit_count$separator$commit_short_sha\n' > .git-semver-release.properties
+  # Create initial commit
+  commit 'Initial'
+
+  run ./git-semver-release version
+  assert_success
+  assert_output --regexp '^0\.0\.0-feature-login\.1\.[0-9a-f]{7}$'
+  rm -f .git-semver-release.properties
+}
+
+@test "Use custom channel from config" {
+  # Initialize Git repository
+  initialize
+  # Set channel in config
+  printf 'channel=beta\n' > .git-semver-release.properties
+  # Create initial commit
+  commit 'Initial'
+
+  run ./git-semver-release version
+  assert_success
+  assert_output --regexp '^0\.0\.0-beta\.1\.[0-9a-f]{7}$'
+  rm -f .git-semver-release.properties
+}
+
+@test "Calculate version at release tag with dirty tree" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create release tag
+  tag "v1.2.3"
+  # Dirty the working tree
+  printf 'modified' > "$TEST_FILE"
+
+  run ./git-semver-release version
+  assert_success
+  assert_output --regexp '\.dirty$'
+}
+
+@test "Fail with explicit error when describe output is unrecognized" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create a tag that matches the describe glob but fails the semver regex
+  tag "v1.2.3.4"
+
+  run --separate-stderr ./git-semver-release version
+  assert_failure 4
+  assert_stderr --partial 'unrecognized git describe output'
+}
+
+@test "Non-semver tag does not interfere with version calculation" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create a non-semver tag (would have been picked up by the loose glob)
+  tag "v1.2"
+
+  run ./git-semver-release version
+  assert_success
+  assert_output --regexp '^0\.0\.0-alpha\.1\.[0-9a-f]{7}$'
+}
+
+@test "Auto-generated tag message includes changelog of commits since last release" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit and release
+  commit 'Initial'
+  tag "v0.0.0"
+  # Create commits to be included in the changelog
+  commit 'fix: null pointer'
+  commit 'feat: add search'
+
+  run ./git-semver-release patch
+  assert_success
+
+  run git tag -l --format='%(contents)' v0.0.1
+  assert_output --partial 'Release 0.0.1'
+  assert_output --partial '- feat: add search'
+  assert_output --partial '- fix: null pointer'
 }
 
 initialize() {

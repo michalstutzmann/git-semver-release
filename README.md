@@ -77,7 +77,7 @@ Commit messages since the last release determine the bump:
 
 - `fix:` or `perf:` -> patch
 - `feat:` -> minor
-- `feat!:` or `BREAKING CHANGE:` -> major
+- Any type with `!:` (e.g. `feat!:`, `refactor!:`) or a `BREAKING CHANGE:` footer -> major
 
 ### Publish the tag immediately
 
@@ -228,7 +228,7 @@ When multiple commits are present, the highest bump type wins:
 git-semver-release release-tag
 ```
 
-Prints the tag at `HEAD` (e.g. `v1.2.3`) when it points to a release. Exits with code `1` otherwise.
+Prints the tag at `HEAD` (e.g. `v1.2.3`) when it points to a release. Exits with code `8` otherwise. Works regardless of whether the working tree is dirty.
 
 ### `create-config-file`
 
@@ -314,27 +314,4 @@ docker build --push --tag "myregistry/myimage:$(git-semver-release version)" .
 | 5 | Uncommitted changes found |
 | 6 | Failed to create release tag |
 | 7 | No releasable changes found |
-
-## Development
-
-Prerequisites:
-
-- [Bats 1.5.0+](https://bats-core.readthedocs.io/en/stable/)
-- [Nectos Act](https://nektosact.com/) for local GitHub Action testing
-- [GitHub CLI](https://cli.github.com/)
-
-Run tests:
-
-```shell
-bats test/test.bats
-```
-
-Run the GitHub Action workflow locally:
-
-```shell
-act push -s GITHUB_TOKEN="$(gh auth token)"
-```
-
-On macOS with Colima, make sure `DOCKER_HOST` points to the Docker socket, for example `DOCKER_HOST=unix:///Users/<USER>/.colima/default/docker.sock`.
-
-On macOS, use `--container-architecture linux/arm64`.
+| 8 | `release-tag` could not find a release tag at `HEAD` |

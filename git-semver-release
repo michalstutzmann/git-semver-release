@@ -19,7 +19,7 @@ has_commits() {
 get_describe_output() {
   local -r tag_prefix="$1"
 
-  git describe --always --match "${tag_prefix}*" --exclude "${tag_prefix}*-*" 2> /dev/null || {
+  git describe --always --match "${tag_prefix}[0-9]*.[0-9]*.[0-9]*" --exclude "${tag_prefix}*-*" 2> /dev/null || {
    printf ''
   }
 }
@@ -134,8 +134,8 @@ version() {
       patch_version='0'
     elif [[ $version_type == 'minor' ]]; then
       ((minor_version++))
-      patch_version='0'    
-    elif [[ $commit_count -gt 0 ]]; then
+      patch_version='0'
+    elif [[ $version_type == 'patch' || $commit_count -gt 0 ]]; then
       ((patch_version++))
     fi
   # Release does not exist but there are commits
@@ -154,11 +154,9 @@ version() {
 
     commit_count="$(get_commit_count)"
     commit_short_sha="${BASH_REMATCH[1]}"
-  # There are no commits
   else
-    major_version='0'
-    minor_version='0'
-    patch_version='0'
+    printf 'error: unrecognized git describe output: %s\n' "$git_describe_output" 1>&2
+    return 1
   fi
 
   local version="$major_version.$minor_version.$patch_version"
@@ -215,7 +213,7 @@ release() {
   local -r channel="$8"
 
   local version
-  version="$(version "$pre_release_format" "$dirty_indicator" "$tag_prefix" 'semver' "$version_type")"
+  version="$(version "$pre_release_format" "$dirty_indicator" "$tag_prefix" 'semver' "$version_type")" || return 1
 
   if [[ $version =~ ^([0-9]+\.[0-9]+\.[0-9]+).*$ ]]; then
       version="${BASH_REMATCH[1]}"
@@ -261,15 +259,13 @@ $changelog"
 }
 
 release_tag() {
-  local -r pre_release_format="$1"
-  local -r dirty_indicator="$2"
-  local -r tag_prefix="$3"
+  local -r tag_prefix="$1"
 
-  local current_version
-  current_version="$(version "$pre_release_format" "$dirty_indicator" "$tag_prefix")"
+  local tag
+  tag="$(git tag --points-at HEAD --list "${tag_prefix}*" --sort=-version:refname 2>/dev/null | grep -E "^${tag_prefix}[0-9]+\.[0-9]+\.[0-9]+$" | head -1)"
 
-  [[ "$current_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || return 1
-  printf '%s\n' "${tag_prefix}${current_version}"
+  [[ -n $tag ]] || return 1
+  printf '%s\n' "$tag"
 }
 
 conventional() {
@@ -353,7 +349,7 @@ main() {
        version "$pre_release_format" "$dirty_indicator" "$tag_prefix" "$output_format" || return 4
        ;;
     release-tag)
-      release_tag "$pre_release_format" "$dirty_indicator" "$tag_prefix"
+      release_tag "$tag_prefix" || return 8
       ;;
     major | minor | patch)
       if is_dirty; then

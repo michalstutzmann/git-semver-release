@@ -56,5 +56,6 @@ These are the return codes from `main()`:
 - 5 = dirty working tree (for `major`/`minor`/`patch` and `conventional`)
 - 6 = `release` failed (for `major`/`minor`/`patch`)
 - 7 = `conventional` failed (e.g. no releasable commits)
+- 8 = `release-tag` did not find a release tag pointing at `HEAD`
 
 Internal helper functions (`is_git_repo`, `has_commits`, etc.) return 0/1 but those propagate through the calling command's exit code, not as distinct top-level codes.
