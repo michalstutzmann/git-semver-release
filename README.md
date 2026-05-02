@@ -36,7 +36,7 @@ git-semver-release patch --dry-run
 ## Why Git SemVer Release
 
 - Single-file Bash tool that works across polyglot repos.
-- Derives versions directly from Git tags and history.
+- Version calculation is built on `git describe`; release tagging and changelog generation are layered on top.
 - Works locally and in Docker builds.
 - Supports both explicit bump commands and [Conventional Commits](https://www.conventionalcommits.org/).
 - Generates pre-release versions from branch and commit metadata without extra services.
