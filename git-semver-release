@@ -95,10 +95,10 @@ get_latest_tag_for_commit_pointed_by_tag() {
 }
 
 version() {
-  local -r pre_release_format="$1"
-  local -r dirty_indicator="$2"
-  local -r tag_prefix="$3"
-  local -r output_format="$4"
+  local -r channel="$1"
+  local -r pre_release_format="$2"
+  local -r dirty_indicator="$3"
+  local -r tag_prefix="$4"
   local -r version_type="$5"
 
   local git_describe_output
@@ -161,67 +161,65 @@ version() {
 
   local version="$major_version.$minor_version.$patch_version"
 
-  if [[ -n $commit_count ]]; then
-    pre_release="$pre_release_format"
-    local branch
-    branch="$(get_git_branch)"
-    branch="${branch//[^0-9A-Za-z-]/-}"
-    pre_release="${pre_release//\$branch/"$branch"}"
-    pre_release="${pre_release//\$commit_count/"$commit_count"}"
-    pre_release="${pre_release//\$commit_short_sha/"$commit_short_sha"}"
-
-    if is_dirty; then
-      pre_release="${pre_release//\$dirty_indicator/"$dirty_indicator"}"
-    else
-      pre_release="${pre_release//\$dirty_indicator/}"
-    fi
+  if [[ -n $version_type ]]; then
+    printf '%s\n' "$version"
   else
-    pre_release="$pre_release_format"
-    local branch
-    branch="$(get_git_branch)"
-    branch="${branch//[^0-9A-Za-z-]/-}"
-    pre_release="${pre_release//\$branch/"$branch"}"
-    pre_release="${pre_release//\$commit_count/}"
-    pre_release="${pre_release//\$commit_short_sha/}"
+    if [[ -n $commit_count ]]; then
+      pre_release="$pre_release_format"
+      local branch
+      branch="$(get_git_branch)"
+      branch="${branch//[^0-9A-Za-z-]/-}"
+      pre_release="${pre_release//\$channel/"$channel"}"
+      pre_release="${pre_release//\$branch/"$branch"}"
+      pre_release="${pre_release//\$commit_count/"$commit_count"}"
+      pre_release="${pre_release//\$commit_short_sha/"$commit_short_sha"}"
 
-    if is_dirty; then
-      pre_release="${pre_release//\$dirty_indicator/"$dirty_indicator"}"
+      if is_dirty; then
+        pre_release="${pre_release//\$dirty_indicator/"$dirty_indicator"}"
+      else
+        pre_release="${pre_release//\$dirty_indicator/}"
+      fi
     else
-      pre_release=''
+      pre_release="$pre_release_format"
+      local branch
+      branch="$(get_git_branch)"
+      branch="${branch//[^0-9A-Za-z-]/-}"
+      pre_release="${pre_release//\$channel/"$channel"}"
+      pre_release="${pre_release//\$branch/"$branch"}"
+      pre_release="${pre_release//\$commit_count/}"
+      pre_release="${pre_release//\$commit_short_sha/}"
+
+      if is_dirty; then
+        pre_release="${pre_release//\$dirty_indicator/"$dirty_indicator"}"
+      else
+        pre_release=''
+      fi
     fi
+
+    pre_release="${pre_release//\$separator/.}"
+    pre_release="$(printf '%s' "$pre_release" | tr -s '.')"
+    pre_release="${pre_release%.}"
+    pre_release="${pre_release#.}"
+
+    version="$version-$pre_release"
+    version="${version%-}"
+
+    printf '%s\n' "$version"
   fi
-
-  pre_release="${pre_release//\$separator/.}"
-  pre_release="$(printf '%s' "$pre_release" | tr -s '.')"
-  pre_release="${pre_release%.}"
-  pre_release="${pre_release#.}"
-
-  version="$version-$pre_release"
-  version="${version%-}"
-
-  printf '%s\n' "$version"
 }
 
 release() {
-  local -r pre_release_format="$1"
-  local -r dirty_indicator="$2"
-  local -r tag_prefix="$3"
-  local -r message="$4"
-  local -r version_type="$5"
-  local -r push="$6"
-  local -r dry_run="$7"
-  local -r channel="$8"
+  local -r channel="$1"
+  local -r pre_release_format="$2"
+  local -r dirty_indicator="$3"
+  local -r tag_prefix="$4"
+  local -r message="$5"
+  local -r version_type="$6"
+  local -r push="$7"
+  local -r dry_run="$8"
 
   local version
-  version="$(version "$pre_release_format" "$dirty_indicator" "$tag_prefix" 'semver' "$version_type")" || return 1
-
-  if [[ $version =~ ^([0-9]+\.[0-9]+\.[0-9]+).*$ ]]; then
-      version="${BASH_REMATCH[1]}"
-  fi
-
-  if [[ -n $channel ]]; then
-    version="$version-$channel"
-  fi
+  version="$(version "$channel" "$pre_release_format" "$dirty_indicator" "$tag_prefix" "$version_type")" || return 1
 
   local -r tag="${tag_prefix}$version"
 
@@ -269,13 +267,13 @@ release_tag() {
 }
 
 conventional() {
-  local -r pre_release_format="$1"
-  local -r dirty_indicator="$2"
-  local -r tag_prefix="$3"
-  local -r message="$4"
-  local -r push="$5"
-  local -r dry_run="$6"
-  local -r channel="$7"
+  local -r channel="$1"
+  local -r pre_release_format="$2"
+  local -r dirty_indicator="$3"
+  local -r tag_prefix="$4"
+  local -r message="$5"
+  local -r push="$6"
+  local -r dry_run="$7"
 
   local latest_tag
   latest_tag="$(get_latest_release_tag "$tag_prefix")"
@@ -288,10 +286,28 @@ conventional() {
     return 2
   fi
 
-  release "$pre_release_format" "$dirty_indicator" "$tag_prefix" "$message" "$version_type" "$push" "$dry_run" "$channel" || return 3
+  release "$channel" "$pre_release_format" "$dirty_indicator" "$tag_prefix" "$message" "$version_type" "$push" "$dry_run" || return 3
+}
+
+usage() {
+  printf '%s\n' \
+    'usage: git-semver-release <command> [--channel NAME] [--push] [--dry-run] [MESSAGE]' \
+    '' \
+    'Commands:' \
+    '  version              Print the current version' \
+    '  major, minor, patch  Create a release tag with the given bump' \
+    '  conventional         Determine bump from commit messages and create a release tag' \
+    '  release-tag          Print the release tag at HEAD'
 }
 
 main() {
+  for arg in "$@"; do
+    if [[ $arg == '--help' || $arg == '-h' ]]; then
+      usage
+      return 0
+    fi
+  done
+
   if ! is_repository; then
     printf 'fatal: not a Git repository' 1>&2
     return 1
@@ -311,15 +327,12 @@ main() {
 
   local channel="${config["channel"]:-alpha}"
   local -r dirty_indicator="${config["dirty_indicator"]:-dirty}"
-  local pre_release_format="${config["pre_release_format"]:-\$channel\$separator\$commit_count\$separator\$commit_short_sha\$separator\$dirty_indicator}"
-  pre_release_format="${pre_release_format//\$channel/"$channel"}"
-  local -r pre_release_format
+  local -r pre_release_format="${config["pre_release_format"]:-\$channel\$separator\$commit_count\$separator\$commit_short_sha\$separator\$dirty_indicator}"
   local -r tag_prefix="${config["tag_prefix"]-v}"
 
   local push=0
   local dry_run=0
   local consume_channel=0
-  channel=''
   local args=()
   for arg in "$@"; do
     if (( consume_channel )); then
@@ -339,14 +352,8 @@ main() {
   local -r mode="${args[0]}"
 
   case "$mode" in
-    create-config-file)
-      printf 'channel=alpha\ndirty_indicator=dirty\npre_release_format=$channel$separator$commit_count$separator$commit_short_sha$separator$dirty_indicator\ntag_prefix=v\n' > \
-        .git-semver-release.properties || return 3
-      ;;
     version)
-       local -r output_format="${args[2]}"
-
-       version "$pre_release_format" "$dirty_indicator" "$tag_prefix" "$output_format" || return 4
+       version "$channel" "$pre_release_format" "$dirty_indicator" "$tag_prefix" || return 4
        ;;
     release-tag)
       release_tag "$tag_prefix" || return 8
@@ -358,7 +365,7 @@ main() {
       fi
 
       local -r message="${args[1]}"
-      release "$pre_release_format" "$dirty_indicator" "$tag_prefix" "$message" "$mode" "$push" "$dry_run" "$channel" || return 6
+      release "$channel" "$pre_release_format" "$dirty_indicator" "$tag_prefix" "$message" "$mode" "$push" "$dry_run" || return 6
       ;;
     conventional)
       if is_dirty; then
@@ -367,10 +374,10 @@ main() {
       fi
 
       local -r message="${args[1]}"
-      conventional "$pre_release_format" "$dirty_indicator" "$tag_prefix" "$message" "$push" "$dry_run" "$channel" || return 7
+      conventional "$channel" "$pre_release_format" "$dirty_indicator" "$tag_prefix" "$message" "$push" "$dry_run" || return 7
       ;;
     *)
-      version "$pre_release_format" "$dirty_indicator" "$tag_prefix" || return 4
+      version "$channel" "$pre_release_format" "$dirty_indicator" "$tag_prefix" || return 4
       ;;
   esac
 }

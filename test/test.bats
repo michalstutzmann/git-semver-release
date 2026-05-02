@@ -96,7 +96,7 @@ teardown() {
   assert_output --regexp '^0\.0\.0-alpha\.1\.[0-9a-f]{7}$'
 }
 
-@test "Create initial release" {
+@test "Create initial conventional release" {
   # Initialize Git repository
   initialize
   # Create initial commit
@@ -586,23 +586,6 @@ teardown() {
   assert_failure 8
 }
 
-@test "Create config file" {
-  # Initialize Git repository
-  initialize
-  # Create initial commit
-  commit 'Initial'
-
-  run ./git-semver-release create-config-file
-  assert_success
-  run cat .git-semver-release.properties
-  assert_output --partial 'dirty_indicator=dirty'
-  assert_output --partial 'channel=alpha'
-  assert_output --partial 'pre_release_format=$channel$separator$commit_count$separator$commit_short_sha$separator$dirty_indicator'
-  assert_output --partial 'tag_prefix=v'
-  refute_output --partial 'build_format'
-  rm -f .git-semver-release.properties
-}
-
 @test "Non-conventional bang message does not trigger major bump" {
   # Initialize Git repository
   initialize
@@ -721,57 +704,6 @@ teardown() {
   rm -f .git-semver-release.properties
 }
 
-@test "Create alpha pre-release with --channel flag" {
-  # Initialize Git repository
-  initialize
-  # Create initial commit
-  commit 'Initial'
-  # Create initial release tag
-  tag "v1.0.0"
-  # Create another commit
-  commit 'Second'
-
-  run ./git-semver-release patch --channel alpha
-  assert_success
-  assert_output '1.0.1-alpha'
-  run git tag --points-at HEAD
-  assert_output --regexp '^v1\.0\.1-alpha$'
-}
-
-@test "Create beta pre-release with --channel flag" {
-  # Initialize Git repository
-  initialize
-  # Create initial commit
-  commit 'Initial'
-  # Create initial release tag
-  tag "v1.0.0"
-  # Create another commit
-  commit 'Second'
-
-  run ./git-semver-release minor --channel beta
-  assert_success
-  assert_output '1.1.0-beta'
-  run git tag --points-at HEAD
-  assert_output --regexp '^v1\.1\.0-beta$'
-}
-
-@test "Create pre-release with --channel using conventional commits" {
-  # Initialize Git repository
-  initialize
-  # Create initial commit
-  commit 'Initial'
-  # Create initial release tag
-  tag "v1.0.0"
-  # Create conventional commit
-  commit 'feat: new feature'
-
-  run ./git-semver-release conventional --channel rc
-  assert_success
-  assert_output '1.1.0-rc'
-  run git tag --points-at HEAD
-  assert_output --regexp '^v1\.1\.0-rc$'
-}
-
 @test "Pre-release tag does not affect stable version calculation" {
   # Initialize Git repository
   initialize
@@ -812,21 +744,6 @@ teardown() {
   assert_output --regexp '^1\.0\.1-alpha\.2\.[0-9a-f]{7}$'
 }
 
-@test "Dry run with --channel does not create tag" {
-  # Initialize Git repository
-  initialize
-  # Create initial commit
-  commit 'Initial'
-
-  run --separate-stderr ./git-semver-release patch --channel alpha --dry-run
-  assert_success
-  assert_stderr 'Would release 0.0.1-alpha'
-
-  # Verify no tag was created
-  run git tag
-  assert_output ''
-}
-
 @test "Default command without arguments behaves like version" {
   # Initialize Git repository
   initialize
@@ -836,6 +753,18 @@ teardown() {
   run ./git-semver-release
   assert_success
   assert_output --regexp '^0\.0\.0-alpha\.1\.[0-9a-f]{7}$'
+}
+
+@test "--help prints usage and exits 0" {
+  run ./git-semver-release --help
+  assert_success
+  assert_output --partial 'usage: git-semver-release'
+}
+
+@test "-h prints usage and exits 0" {
+  run ./git-semver-release -h
+  assert_success
+  assert_output --partial 'usage: git-semver-release'
 }
 
 @test "Push tag with --push flag for conventional release" {

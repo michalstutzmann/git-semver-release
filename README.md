@@ -47,7 +47,6 @@ git-semver-release patch --dry-run
 
 ```shell
 git-semver-release version
-git-semver-release
 ```
 
 Example output:
@@ -230,14 +229,6 @@ git-semver-release release-tag
 
 Prints the tag at `HEAD` (e.g. `v1.2.3`) when it points to a release. Exits with code `8` otherwise. Works regardless of whether the working tree is dirty.
 
-### `create-config-file`
-
-```shell
-git-semver-release create-config-file
-```
-
-Creates `.git-semver-release.properties` in the current directory with default values.
-
 ## Configuration
 
 Customize behavior with `.git-semver-release.properties`:
@@ -309,7 +300,6 @@ docker build --push --tag "myregistry/myimage:$(git-semver-release version)" .
 | 0 | Success |
 | 1 | Not a Git repository |
 | 2 | No commits yet |
-| 3 | Failed to create config file |
 | 4 | Failed to calculate version |
 | 5 | Uncommitted changes found |
 | 6 | Failed to create release tag |
