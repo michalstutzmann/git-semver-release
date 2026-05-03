@@ -46,6 +46,10 @@ get_latest_release_tag() {
   git describe --abbrev=0 --match "${tag_prefix}[0-9]*.[0-9]*.[0-9]*" --exclude "${tag_prefix}*-*" 2>/dev/null || printf ''
 }
 
+escape_regex() {
+  printf '%s' "$1" | sed 's/[][\\.*+?(){}|^$]/\\&/g'
+}
+
 get_bump_type_for_commits_since_tag() {
   local -r tag="$1"
   local bump_type=''
@@ -110,9 +114,12 @@ version() {
   local commit_count
   local commit_short_sha
 
+  local escaped_tag_prefix
+  escaped_tag_prefix="$(escape_regex "$tag_prefix")"
+
   # Release exists with possible additional commits
-  local -r describe_pattern="^${tag_prefix}([0-9]+)\.([0-9]+)\.([0-9]+)(-([0-9]+))?(-g([a-f0-9]{7,}))?$"
-  local -r tag_pattern="^${tag_prefix}([0-9]+)\.([0-9]+)\.([0-9]+)$"
+  local -r describe_pattern="^${escaped_tag_prefix}([0-9]+)\.([0-9]+)\.([0-9]+)(-([0-9]+))?(-g([a-f0-9]{7,}))?$"
+  local -r tag_pattern="^${escaped_tag_prefix}([0-9]+)\.([0-9]+)\.([0-9]+)$"
 
   if [[ "$git_describe_output" =~ $describe_pattern ]]; then
     major_version="${BASH_REMATCH[1]}"
@@ -259,8 +266,11 @@ $changelog"
 release_tag() {
   local -r tag_prefix="$1"
 
+  local escaped_tag_prefix
+  escaped_tag_prefix="$(escape_regex "$tag_prefix")"
+
   local tag
-  tag="$(git tag --points-at HEAD --list "${tag_prefix}*" --sort=-version:refname 2>/dev/null | grep -E "^${tag_prefix}[0-9]+\.[0-9]+\.[0-9]+$" | head -1)"
+  tag="$(git tag --points-at HEAD --list "${tag_prefix}*" --sort=-version:refname 2>/dev/null | grep -E "^${escaped_tag_prefix}[0-9]+\.[0-9]+\.[0-9]+$" | head -1)"
 
   [[ -n $tag ]] || return 1
   printf '%s\n' "$tag"
