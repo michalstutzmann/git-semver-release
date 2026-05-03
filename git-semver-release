@@ -259,7 +259,8 @@ $changelog"
   printf '%s\n' "$version"
 
   if (( push )); then
-    git push origin HEAD "$tag" 1>&2 || return 1
+    git push origin HEAD 1>&2 || return 1
+    git push origin "$tag" 1>&2 || return 1
   fi
 }
 
