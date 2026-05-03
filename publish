@@ -1,8 +1,17 @@
 #!/usr/bin/env bash
 
+is_detached_head() {
+    ! git symbolic-ref --quiet HEAD >/dev/null
+}
+
 create_github_release() {
     local -r version="$1"
     local -r release_tag="$2"
+
+    if gh release view "$release_tag" >/dev/null 2>&1; then
+        printf 'GitHub release %s already exists, skipping\n' "$release_tag" 1>&2
+        return 0
+    fi
 
     gh release create "$release_tag" \
         --title "$version" \
@@ -57,7 +66,7 @@ main() {
     local release_tag
     release_tag="$(./git-semver-release release-tag)"
 
-    if [[ -n $release_tag ]]; then
+    if is_detached_head && [[ -n $release_tag ]]; then
         create_github_release "$version" "$release_tag" || return 6
         build_and_push_docker_image "$version" 1 || return 7
     else

@@ -1,7 +1,11 @@
 ---
 name: Publish
 on:
-  workflow_call:
+  push:
+    branches:
+      - '**'
+    tags:
+      - '**'
 permissions:
   contents: write
   packages: write
