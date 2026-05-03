@@ -19,7 +19,7 @@ teardown() {
 
 @test "Fail if Git repository is not initialized" {
   run --separate-stderr ./git-semver-release version
-  assert_failure 1
+  assert_failure 2
   assert_stderr 'fatal: not a Git repository'
 }
 
@@ -28,7 +28,7 @@ teardown() {
   initialize
 
   run --separate-stderr ./git-semver-release version
-  assert_failure 2
+  assert_failure 3
   assert_stderr 'error: no commits yet'
 }
 

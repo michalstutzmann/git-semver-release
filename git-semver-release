@@ -318,14 +318,19 @@ main() {
     fi
   done
 
+  if ! command -v git >/dev/null 2>&1; then
+        printf 'error: Git is not installed or not on PATH\n' 1>&2
+        return 1
+  fi
+
   if ! is_repository; then
     printf 'fatal: not a Git repository' 1>&2
-    return 1
+    return 2
   fi
 
   if ! has_commits; then
     printf 'error: no commits yet' 1>&2
-    return 2
+    return 3
   fi
 
   declare -A config

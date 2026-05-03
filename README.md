@@ -298,8 +298,9 @@ docker build --push --tag "myregistry/myimage:$(git-semver-release version)" .
 | Code | Description |
 |-|-|
 | 0 | Success |
-| 1 | Not a Git repository |
-| 2 | No commits yet |
+| 1 | Git not installed |
+| 2 | Not a Git repository |
+| 3 | No commits yet |
 | 4 | Failed to calculate version |
 | 5 | Uncommitted changes found |
 | 6 | Failed to create release tag |

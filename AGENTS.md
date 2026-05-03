@@ -51,6 +51,9 @@ The entire tool is a single Bash script with no external dependencies beyond Git
 These are the return codes from `main()`:
 
 - 0 = success
+- 1 = Git not installed
+- 2 = not a Git repository
+- 3 = no commits yet
 - 4 = `version` command failed
 - 5 = dirty working tree (for `major`/`minor`/`patch` and `conventional`)
 - 6 = `release` failed (for `major`/`minor`/`patch`)

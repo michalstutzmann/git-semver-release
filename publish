@@ -64,13 +64,13 @@ main() {
     version="$(./git-semver-release version)" || return 5
 
     local release_tag
-    release_tag="$(./git-semver-release release-tag)"
+    release_tag="$(./git-semver-release release-tag)" || return 6
 
     if is_detached_head && [[ -n $release_tag ]]; then
-        create_github_release "$version" "$release_tag" || return 6
-        build_and_push_docker_image "$version" 1 || return 7
+        create_github_release "$version" "$release_tag" || return 7
+        build_and_push_docker_image "$version" 1 || return 8
     else
-        build_and_push_docker_image "$version" 0 || return 8
+        build_and_push_docker_image "$version" 0 || return 9
     fi
 }
 
