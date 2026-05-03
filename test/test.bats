@@ -559,7 +559,7 @@ teardown() {
   assert_output 'v1.2.3'
 }
 
-@test "release-tag exits 8 when HEAD is not on a release" {
+@test "release-tag prints empty string when HEAD is not on a release" {
   # Initialize Git repository
   initialize
   # Create initial commit
@@ -570,7 +570,7 @@ teardown() {
   commit 'Second'
 
   run ./git-semver-release release-tag
-  assert_failure 8
+  assert_success
   assert_output ''
 }
 
@@ -583,7 +583,8 @@ teardown() {
   tag "v1.2.3-alpha.1"
 
   run ./git-semver-release release-tag
-  assert_failure 8
+  assert_success
+  assert_output ''
 }
 
 @test "Non-conventional bang message does not trigger major bump" {

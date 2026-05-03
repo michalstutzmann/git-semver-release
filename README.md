@@ -227,7 +227,7 @@ When multiple commits are present, the highest bump type wins:
 git-semver-release release-tag
 ```
 
-Prints the tag at `HEAD` (e.g. `v1.2.3`) when it points to a release. Exits with code `8` otherwise. Works regardless of whether the working tree is dirty.
+Prints the tag at `HEAD` (e.g. `v1.2.3`) when it points to a release, or an empty string otherwise. Works regardless of whether the working tree is dirty.
 
 ## Configuration
 
@@ -304,4 +304,3 @@ docker build --push --tag "myregistry/myimage:$(git-semver-release version)" .
 | 5 | Uncommitted changes found |
 | 6 | Failed to create release tag |
 | 7 | No releasable changes found |
-| 8 | `release-tag` could not find a release tag at `HEAD` |

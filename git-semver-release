@@ -272,7 +272,6 @@ release_tag() {
   local tag
   tag="$(git tag --points-at HEAD --list "${tag_prefix}*" --sort=-version:refname 2>/dev/null | grep -E "^${escaped_tag_prefix}[0-9]+\.[0-9]+\.[0-9]+$" | head -1)"
 
-  [[ -n $tag ]] || return 1
   printf '%s\n' "$tag"
 }
 
@@ -366,7 +365,7 @@ main() {
        version "$channel" "$pre_release_format" "$dirty_indicator" "$tag_prefix" || return 4
        ;;
     release-tag)
-      release_tag "$tag_prefix" || return 8
+      release_tag "$tag_prefix"
       ;;
     major | minor | patch)
       if is_dirty; then
