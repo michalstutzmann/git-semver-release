@@ -1,19 +1,68 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
-VERSION="$(./git-semver-release version)"
+create_github_release() {
+    local -r version="$1"
+    local -r release_tag="$2"
 
-if TAG="$(./git-semver-release release-tag)"; then
-    gh release create "${TAG}" \
-        --title "${VERSION}" \
+    gh release create "$release_tag" \
+        --title "$version" \
         --notes-from-tag \
-        git-semver-release
-fi
+        git-semver-release || return 1
+}
 
-docker buildx build \
-    --platform linux/amd64,linux/arm64 \
-    --push \
-    --sbom=false \
-    --provenance=false \
-    --tag "ghcr.io/michalstutzmann/git-semver-release:${VERSION}" \
-    --tag "ghcr.io/michalstutzmann/git-semver-release:latest" \
-    .
+build_and_push_docker_image() {
+    local -r version="$1"
+    local -r latest="$2"
+
+    if (( latest )); then
+        docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --push \
+            --sbom=false \
+            --provenance=false \
+            --tag "ghcr.io/michalstutzmann/git-semver-release:$version" \
+            --tag "ghcr.io/michalstutzmann/git-semver-release:latest" \
+            . || return 1
+    else
+        docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --push \
+            --sbom=false \
+            --provenance=false \
+            --tag "ghcr.io/michalstutzmann/git-semver-release:$version" \
+            . || return 1
+    fi
+}
+
+main() {
+    if ! command -v gh >/dev/null 2>&1; then
+        printf 'error: gh is not installed or not on PATH\n' 1>&2
+        return 1
+    elif ! gh auth status >/dev/null 2>&1; then
+        printf 'error: gh is not authenticated (run: gh auth login)\n' 1>&2
+        return 2
+    fi
+
+    if ! command -v docker >/dev/null 2>&1; then
+        printf 'error: docker is not installed or not on PATH\n' 1>&2
+        return 3
+    elif ! docker buildx inspect >/dev/null 2>&1; then
+        printf 'error: docker buildx is not configured (run: docker buildx create --use)\n' 1>&2
+        return 4
+    fi
+
+    local version
+    version="$(./git-semver-release version)" || return 5
+
+    local release_tag
+    release_tag="$(./git-semver-release release-tag)"
+
+    if [[ -n $release_tag ]]; then
+        create_github_release "$version" "$release_tag" || return 6
+        build_and_push_docker_image "$version" 1 || return 7
+    else
+        build_and_push_docker_image "$version" 0 || return 8
+    fi
+}
+
+main "$@"
