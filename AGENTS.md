@@ -4,7 +4,7 @@ This file provides guidance to AI agents working with code in this repository.
 
 ## Project Overview
 
-git-semver-release is a single Bash script (`git-semver-release`, ~370 lines) that calculates and creates semantic version tags from Git history. It supports manual bumps (major/minor/patch), Conventional Commits-based bumps, and pre-release channels.
+git-semver-release is a single Bash script (`git-semver-release`, ~400 lines) that calculates and creates semantic version tags from Git history. It supports manual bumps (major/minor/patch), Conventional Commits-based bumps, and pre-release channels.
 
 ## Prerequisites
 
@@ -30,6 +30,8 @@ git submodule update --init --recursive
 
 ```bash
 git-semver-release (major|minor|patch) [--push] [--dry-run] [--channel <name>] [MESSAGE]
+git-semver-release conventional [--push] [--dry-run] [--channel <name>] [MESSAGE]
+git-semver-release release-tag
 ```
 
 ## Architecture
