@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+
+VERSION="$(./git-semver-release version)"
+
+if TAG="$(./git-semver-release release-tag)"; then
+    gh release create "${TAG}" \
+        --title "${VERSION}" \
+        --notes-from-tag \
+        git-semver-release
+fi
+
+docker buildx build \
+    --platform linux/amd64,linux/arm64 \
+    --push \
+    --tag "ghcr.io/michalstutzmann/git-semver-release:${VERSION}" \
+    --tag "ghcr.io/michalstutzmann/git-semver-release:latest" \
+    .

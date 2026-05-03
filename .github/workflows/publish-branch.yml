@@ -1,0 +1,15 @@
+---
+name: Publish Branch
+on:
+  push:
+    branches:
+      - '**'
+concurrency:
+  group: publish-${{ github.sha }}
+  cancel-in-progress: true
+jobs:
+  publish:
+    uses: ./.github/workflows/publish.yml
+    permissions:
+      contents: write
+      packages: write
