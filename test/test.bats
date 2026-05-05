@@ -768,6 +768,12 @@ teardown() {
   assert_output --partial 'usage: git-semver-release'
 }
 
+@test "--version prints VERSION and exits 0" {
+  run ./git-semver-release --version
+  assert_success
+  assert_output 'dev'
+}
+
 @test "Push tag with --push flag for conventional release" {
   # Initialize bare remote repository
   env -u GIT_DIR -u GIT_WORK_TREE git init --bare tmp/remote

@@ -13,10 +13,15 @@ create_github_release() {
         return 0
     fi
 
+    local staging_dir
+    staging_dir="$(mktemp -d)"
+    sed "s/^readonly VERSION='dev'\$/readonly VERSION='$version'/" git-semver-release \
+        > "$staging_dir/git-semver-release" || return 1
+
     gh release create "$release_tag" \
         --title "$version" \
         --notes-from-tag \
-        git-semver-release || return 1
+        "$staging_dir/git-semver-release" || return 1
 }
 
 build_and_push_docker_image() {
@@ -29,6 +34,7 @@ build_and_push_docker_image() {
             --push \
             --sbom=false \
             --provenance=false \
+            --build-arg "VERSION=$version" \
             --tag "ghcr.io/michalstutzmann/git-semver-release:$version" \
             --tag "ghcr.io/michalstutzmann/git-semver-release:latest" \
             . || return 1
@@ -38,6 +44,7 @@ build_and_push_docker_image() {
             --push \
             --sbom=false \
             --provenance=false \
+            --build-arg "VERSION=$version" \
             --tag "ghcr.io/michalstutzmann/git-semver-release:$version" \
             . || return 1
     fi

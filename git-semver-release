@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+readonly VERSION='dev'
+
 is_repository() {
   if git rev-parse --git-dir > /dev/null 2>&1; then
     return 0
@@ -307,13 +309,23 @@ usage() {
     '  version              Print the current version' \
     '  major, minor, patch  Create a release tag with the given bump' \
     '  conventional         Determine bump from commit messages and create a release tag' \
-    '  release-tag          Print the release tag at HEAD'
+    '  release-tag          Print the release tag at HEAD' \
+    '' \
+    'Options:' \
+    '  --channel NAME       Pre-release channel name (default: alpha)' \
+    '  --push               Push commits and created tag to origin' \
+    '  --dry-run            Print the version that would be released without tagging' \
+    '  --version            Print the git-semver-release version' \
+    '  -h, --help           Print this help message'
 }
 
 main() {
   for arg in "$@"; do
     if [[ $arg == '--help' || $arg == '-h' ]]; then
       usage
+      return 0
+    elif [[ $arg == '--version' ]]; then
+      printf '%s\n' "$VERSION"
       return 0
     fi
   done
