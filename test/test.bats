@@ -15,6 +15,7 @@ setup() {
 
 teardown() {
   rm -rf tmp
+  rm -f .git-semver-release.properties
 }
 
 @test "Fail if Git repository is not initialized" {
@@ -93,7 +94,7 @@ teardown() {
 
   run ./git-semver-release version
   assert_success
-  assert_output --regexp '^0\.0\.0-alpha\.1\.[0-9a-f]{7}$'
+  assert_output --regexp '^0\.1\.0-alpha\.1\.[0-9a-f]{7}$'
 }
 
 @test "Create initial conventional release" {
@@ -104,10 +105,10 @@ teardown() {
 
   run ./git-semver-release conventional 'Initial'
   assert_success
-  assert_output '0.0.0'
+  assert_output '0.1.0'
 
   run git tag --points-at HEAD
-  assert_output --regexp '^v0\.0\.0$'
+  assert_output --regexp '^v0\.1\.0$'
 }
 
 @test "Get version of the latest tag pointing to the same commit" {
@@ -133,9 +134,9 @@ teardown() {
 
   run ./git-semver-release patch 'Release'
   assert_success
-  assert_output '0.0.0'
+  assert_output '0.1.0'
   run git tag --points-at HEAD
-  assert_output --regexp '^v0\.0\.0$'
+  assert_output --regexp '^v0\.1\.0$'
 }
 
 @test "Create minor release without previous release" {
@@ -396,7 +397,7 @@ teardown() {
   run ./git-semver-release patch 'Release $version'
   assert_success
   run git tag -n1 --points-at HEAD
-  assert_output --regexp 'Release 0\.0\.1'
+  assert_output --regexp 'Release 0\.1\.0'
 }
 
 @test "Detect dirty tree with commits beyond tag" {
@@ -476,11 +477,11 @@ teardown() {
 
   run --separate-stderr ./git-semver-release patch --push
   assert_success
-  assert_output '0.0.0'
+  assert_output '0.1.0'
 
   # Verify tag was pushed to remote
   run env -u GIT_DIR -u GIT_WORK_TREE git -C tmp/remote tag
-  assert_output 'v0.0.0'
+  assert_output 'v0.1.0'
 
   # Verify branch commits were pushed to remote
   run env -u GIT_DIR -u GIT_WORK_TREE git -C tmp/remote rev-parse "$(git rev-parse HEAD)"
@@ -625,7 +626,7 @@ teardown() {
 
   run --separate-stderr ./git-semver-release patch --dry-run
   assert_success
-  assert_stderr 'Would release 0.0.0'
+  assert_stderr 'Would release 0.1.0'
 
   # Verify no tag was created
   run git tag
@@ -662,7 +663,7 @@ teardown() {
 
   run --separate-stderr ./git-semver-release patch --push --dry-run
   assert_success
-  assert_stderr 'Would release 0.0.0'
+  assert_stderr 'Would release 0.1.0'
 
   # Verify no tag was pushed to remote
   run env -u GIT_DIR -u GIT_WORK_TREE git -C tmp/remote tag
@@ -686,7 +687,6 @@ teardown() {
   assert_output '1.0.1'
   run git tag --points-at HEAD
   assert_output --regexp '^1\.0\.1$'
-  rm -f .git-semver-release.properties
 }
 
 @test "Use custom dirty indicator from config" {
@@ -702,7 +702,6 @@ teardown() {
   run ./git-semver-release version
   assert_success
   assert_output --regexp '\.modified$'
-  rm -f .git-semver-release.properties
 }
 
 @test "Pre-release tag does not affect stable version calculation" {
@@ -753,7 +752,7 @@ teardown() {
 
   run ./git-semver-release
   assert_success
-  assert_output --regexp '^0\.0\.0-alpha\.1\.[0-9a-f]{7}$'
+  assert_output --regexp '^0\.1\.0-alpha\.1\.[0-9a-f]{7}$'
 }
 
 @test "--help prints usage and exits 0" {
@@ -808,8 +807,7 @@ teardown() {
 
   run ./git-semver-release version
   assert_success
-  assert_output --regexp '^0\.0\.0-feature-login\.1\.[0-9a-f]{7}$'
-  rm -f .git-semver-release.properties
+  assert_output --regexp '^0\.1\.0-feature-login\.1\.[0-9a-f]{7}$'
 }
 
 @test "Use custom channel from config" {
@@ -822,8 +820,7 @@ teardown() {
 
   run ./git-semver-release version
   assert_success
-  assert_output --regexp '^0\.0\.0-beta\.1\.[0-9a-f]{7}$'
-  rm -f .git-semver-release.properties
+  assert_output --regexp '^0\.1\.0-beta\.1\.[0-9a-f]{7}$'
 }
 
 @test "Calculate version at release tag with dirty tree" {
@@ -864,7 +861,7 @@ teardown() {
 
   run ./git-semver-release version
   assert_success
-  assert_output --regexp '^0\.0\.0-alpha\.1\.[0-9a-f]{7}$'
+  assert_output --regexp '^0\.1\.0-alpha\.1\.[0-9a-f]{7}$'
 }
 
 @test "Auto-generated tag message includes changelog of commits since last release" {

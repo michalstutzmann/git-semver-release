@@ -24,13 +24,13 @@ Then run:
 
 ```shell
 git-semver-release version
-# 0.0.1-alpha.3.abcdef0
+# 0.1.1-alpha.3.abcdef0
 
 git-semver-release conventional --dry-run
-# Would release 0.1.0
+# Would release 0.2.0
 
 git-semver-release patch --dry-run
-# Would release 0.0.2
+# Would release 0.1.2
 ```
 
 ## Why Git SemVer Release
@@ -51,9 +51,9 @@ git-semver-release version
 
 Example output:
 
-- `0.0.0-alpha.1.abcdef0` for a repo with commits but no release tags yet
-- `0.0.1-alpha.3.abcdef0` for commits after `v0.0.0`
-- `0.0.2-alpha.3.abcdef0.dirty` when the working tree is dirty
+- `0.1.0-alpha.1.abcdef0` for a repo with commits but no release tags yet
+- `0.1.1-alpha.3.abcdef0` for commits after `v0.1.0`
+- `0.1.2-alpha.3.abcdef0.dirty` when the working tree is dirty
 - `1.2.3` when `HEAD` is exactly on tag `v1.2.3`
 
 ### Create a release manually
@@ -156,14 +156,14 @@ To push tags created inside the container, mount your Git credentials and pass `
 git-semver-release version
 ```
 
-Returns the current version without creating a tag. If `HEAD` is on a release tag, it returns that version exactly. Otherwise, it returns the next patch pre-release version.
+Returns the current version without creating a tag. If `HEAD` is on a release tag, it returns that version exactly. Otherwise, it returns the next patch pre-release version. With no prior release, the initial pre-release is `0.1.0-alpha.N.sha` per the SemVer recommendation that initial development starts at `0.1.0`.
 
 | Latest release tag | Commits since release | Short SHA | Uncommitted changes | Output |
 |-|-|-|-|-|
-| *(none)* | 1 | `abcdef0` | no | `0.0.0-alpha.1.abcdef0` |
-| `v0.0.0` | 0 | `abcdef0` | no | `0.0.0` |
-| `v0.0.0` | 1 | `abcdef1` | no | `0.0.1-alpha.1.abcdef1` |
-| `v0.0.1` | 1 | `abcdef1` | yes | `0.0.2-alpha.1.abcdef1.dirty` |
+| *(none)* | 1 | `abcdef0` | no | `0.1.0-alpha.1.abcdef0` |
+| `v0.1.0` | 0 | `abcdef0` | no | `0.1.0` |
+| `v0.1.0` | 1 | `abcdef1` | no | `0.1.1-alpha.1.abcdef1` |
+| `v0.1.1` | 1 | `abcdef1` | yes | `0.1.2-alpha.1.abcdef1.dirty` |
 
 ### `major`, `minor`, `patch`
 
@@ -188,11 +188,11 @@ If you pass `MESSAGE`, it replaces the default annotation entirely. Use `$versio
 
 | Latest release tag | `patch` | `minor` | `major` |
 |-|-|-|-|
-| *(none)* | `v0.0.0` | `v0.1.0` | `v1.0.0` |
-| `v0.0.1` | `v0.0.2` | `v0.1.0` | `v1.0.0` |
+| *(none)* | `v0.1.0` | `v0.1.0` | `v1.0.0` |
+| `v0.1.0` | `v0.1.1` | `v0.2.0` | `v1.0.0` |
 | `v1.2.3` | `v1.2.4` | `v1.3.0` | `v2.0.0` |
 
-With no prior release, `patch` finalizes the pre-release `0.0.0-alpha.N.sha` into `v0.0.0` rather than bumping past it. `minor` and `major` always bump from `0.0.0`.
+With no prior release, both `patch` and `minor` finalize the initial pre-release `0.1.0-alpha.N.sha` into `v0.1.0` (per the SemVer recommendation that initial development starts at `0.1.0`). Only `major` jumps past it to `v1.0.0`.
 
 ### `conventional`
 
@@ -214,7 +214,7 @@ When multiple commits are present, the highest bump type wins:
 
 | Latest release tag | Commits since release | Created tag |
 |-|-|-|
-| *(none)* | `fix: typo` | `v0.0.0` |
+| *(none)* | `fix: typo` | `v0.1.0` |
 | `v0.0.1` | `feat: add search` | `v0.1.0` |
 | `v0.0.1` | `feat(api): add search` | `v0.1.0` |
 | `v0.1.0` | `feat!: redesign API` | `v1.0.0` |

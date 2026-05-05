@@ -42,7 +42,7 @@ The entire tool is a single Bash script with no external dependencies beyond Git
 
 **Commands:** `version` (calculates version without tagging), `major`/`minor`/`patch` (create release tags), `conventional` (auto-detect bump type from commit messages), `release-tag` (prints the tag at HEAD when on a release, or an empty string otherwise). `--help`/`-h` and `--version` short-circuit before the repo check, so they work outside a Git repo. Any unrecognized command (or no command) falls through to `version`.
 
-**Version calculation flow:** `get_latest_release_tag()` finds the last stable tag → `get_describe_output()` gets distance from that tag → `version()` computes the pre-release version string incorporating branch name, commit count, and channel. With no prior release, `patch` returns `0.0.0` (finalizing the `0.0.0-alpha.N.sha` pre-release) rather than bumping to `0.0.1` — `minor`/`major` still bump as expected.
+**Version calculation flow:** `get_latest_release_tag()` finds the last stable tag → `get_describe_output()` gets distance from that tag → `version()` computes the pre-release version string incorporating branch name, commit count, and channel. With no prior release, the baseline is `0.1.0` (per the SemVer recommendation): `version` advertises `0.1.0-alpha.N.sha`, both `patch` and `minor` finalize to `v0.1.0`, and `major` jumps to `v1.0.0`. Past `v0.1.0` the standard bump rules apply.
 
 **Release flow:** `release()` calls `version()` for the next version, generates a changelog via `get_changelog_since_tag()`, creates an annotated Git tag, and optionally pushes.
 

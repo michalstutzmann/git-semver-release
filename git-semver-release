@@ -150,13 +150,12 @@ version() {
   # Release does not exist but there are commits
   elif [[ $git_describe_output =~ ^([a-f0-9]{7,})$ ]]; then
     major_version='0'
-    minor_version='0'
+    minor_version='1'
     patch_version='0'
 
     if [[ $version_type == 'major' ]]; then
       ((major_version++))
-    elif [[ $version_type == 'minor' ]]; then
-      ((minor_version++))
+      minor_version='0'
     fi
 
     commit_count="$(get_commit_count)"
