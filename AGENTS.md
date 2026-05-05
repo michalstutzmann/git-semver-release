@@ -4,7 +4,7 @@ This file provides guidance to AI agents working with code in this repository.
 
 ## Project Overview
 
-git-semver-release is a single Bash script (`git-semver-release`, ~400 lines) that calculates and creates semantic version tags from Git history. It supports manual bumps (major/minor/patch), Conventional Commits-based bumps, and pre-release channels.
+git-semver-release is a single Bash script (`git-semver-release`, ~410 lines) that calculates and creates semantic version tags from Git history. It supports manual bumps (major/minor/patch), Conventional Commits-based bumps, and pre-release channels.
 
 ## Prerequisites
 
@@ -40,13 +40,15 @@ The entire tool is a single Bash script with no external dependencies beyond Git
 
 **Command dispatch:** `main()` parses `.git-semver-release.properties` (if present), processes CLI flags (`--push`, `--channel`, `--dry-run`), then routes to a command function.
 
-**Commands:** `version` (calculates version without tagging), `major`/`minor`/`patch` (create release tags), `conventional` (auto-detect bump type from commit messages), `release-tag` (prints the tag at HEAD when on a release, or an empty string otherwise). `--help`/`-h` prints usage to stdout and exits 0; it short-circuits before the repo check, so it works outside a Git repo. Any unrecognized command (or no command) falls through to `version`.
+**Commands:** `version` (calculates version without tagging), `major`/`minor`/`patch` (create release tags), `conventional` (auto-detect bump type from commit messages), `release-tag` (prints the tag at HEAD when on a release, or an empty string otherwise). `--help`/`-h` and `--version` short-circuit before the repo check, so they work outside a Git repo. Any unrecognized command (or no command) falls through to `version`.
 
-**Version calculation flow:** `get_latest_release_tag()` finds the last stable tag → `get_describe_output()` gets distance from that tag → `version()` computes the pre-release version string incorporating branch name, commit count, and channel.
+**Version calculation flow:** `get_latest_release_tag()` finds the last stable tag → `get_describe_output()` gets distance from that tag → `version()` computes the pre-release version string incorporating branch name, commit count, and channel. With no prior release, `patch` returns `0.0.0` (finalizing the `0.0.0-alpha.N.sha` pre-release) rather than bumping to `0.0.1` — `minor`/`major` still bump as expected.
 
 **Release flow:** `release()` calls `version()` for the next version, generates a changelog via `get_changelog_since_tag()`, creates an annotated Git tag, and optionally pushes.
 
 **Conventional Commits:** `get_bump_type_for_commits_since_tag()` uses regex to scan commit messages for `feat`/`fix`/`BREAKING CHANGE` patterns to determine the bump type, then delegates to `release()`.
+
+**`--version` baking:** The script ships with `readonly VERSION='dev'` at the top. The `publish` script (for the GitHub release asset) and the `Dockerfile` (via `ARG VERSION` + `sed`) substitute the resolved version at release time. Don't change the literal `'dev'` value in source — both substitution sites match `^readonly VERSION='dev'$` exactly.
 
 ## Exit Codes
 

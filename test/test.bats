@@ -104,10 +104,10 @@ teardown() {
 
   run ./git-semver-release conventional 'Initial'
   assert_success
-  assert_output '0.0.1'
+  assert_output '0.0.0'
 
   run git tag --points-at HEAD
-  assert_output --regexp '^v0\.0\.1$'
+  assert_output --regexp '^v0\.0\.0$'
 }
 
 @test "Get version of the latest tag pointing to the same commit" {
@@ -133,9 +133,9 @@ teardown() {
 
   run ./git-semver-release patch 'Release'
   assert_success
-  assert_output '0.0.1'
+  assert_output '0.0.0'
   run git tag --points-at HEAD
-  assert_output --regexp '^v0\.0\.1$'
+  assert_output --regexp '^v0\.0\.0$'
 }
 
 @test "Create minor release without previous release" {
@@ -476,11 +476,11 @@ teardown() {
 
   run --separate-stderr ./git-semver-release patch --push
   assert_success
-  assert_output '0.0.1'
+  assert_output '0.0.0'
 
   # Verify tag was pushed to remote
   run env -u GIT_DIR -u GIT_WORK_TREE git -C tmp/remote tag
-  assert_output 'v0.0.1'
+  assert_output 'v0.0.0'
 
   # Verify branch commits were pushed to remote
   run env -u GIT_DIR -u GIT_WORK_TREE git -C tmp/remote rev-parse "$(git rev-parse HEAD)"
@@ -625,7 +625,7 @@ teardown() {
 
   run --separate-stderr ./git-semver-release patch --dry-run
   assert_success
-  assert_stderr 'Would release 0.0.1'
+  assert_stderr 'Would release 0.0.0'
 
   # Verify no tag was created
   run git tag
@@ -662,7 +662,7 @@ teardown() {
 
   run --separate-stderr ./git-semver-release patch --push --dry-run
   assert_success
-  assert_stderr 'Would release 0.0.1'
+  assert_stderr 'Would release 0.0.0'
 
   # Verify no tag was pushed to remote
   run env -u GIT_DIR -u GIT_WORK_TREE git -C tmp/remote tag

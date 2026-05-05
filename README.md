@@ -188,9 +188,11 @@ If you pass `MESSAGE`, it replaces the default annotation entirely. Use `$versio
 
 | Latest release tag | `patch` | `minor` | `major` |
 |-|-|-|-|
-| *(none)* | `v0.0.1` | `v0.1.0` | `v1.0.0` |
+| *(none)* | `v0.0.0` | `v0.1.0` | `v1.0.0` |
 | `v0.0.1` | `v0.0.2` | `v0.1.0` | `v1.0.0` |
 | `v1.2.3` | `v1.2.4` | `v1.3.0` | `v2.0.0` |
+
+With no prior release, `patch` finalizes the pre-release `0.0.0-alpha.N.sha` into `v0.0.0` rather than bumping past it. `minor` and `major` always bump from `0.0.0`.
 
 ### `conventional`
 
@@ -212,7 +214,7 @@ When multiple commits are present, the highest bump type wins:
 
 | Latest release tag | Commits since release | Created tag |
 |-|-|-|
-| *(none)* | `fix: typo` | `v0.0.1` |
+| *(none)* | `fix: typo` | `v0.0.0` |
 | `v0.0.1` | `feat: add search` | `v0.1.0` |
 | `v0.0.1` | `feat(api): add search` | `v0.1.0` |
 | `v0.1.0` | `feat!: redesign API` | `v1.0.0` |
@@ -228,6 +230,15 @@ git-semver-release release-tag
 ```
 
 Prints the tag at `HEAD` (e.g. `v1.2.3`) when it points to a release, or an empty string otherwise. Works regardless of whether the working tree is dirty.
+
+### Global flags
+
+```shell
+git-semver-release --version
+git-semver-release --help    # also -h
+```
+
+`--version` prints the installed `git-semver-release` version. Source checkouts print `dev`; released artifacts have the version baked in at publish time.
 
 ## Configuration
 

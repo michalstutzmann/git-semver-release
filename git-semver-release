@@ -157,8 +157,6 @@ version() {
       ((major_version++))
     elif [[ $version_type == 'minor' ]]; then
       ((minor_version++))
-    elif [[ $version_type == 'patch' ]]; then
-      ((patch_version++))
     fi
 
     commit_count="$(get_commit_count)"
