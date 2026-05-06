@@ -9,28 +9,27 @@ Use it as a local CLI or a [Docker image](#docker).
 Install it:
 
 ```shell
-brew tap michalstutzmann/git-semver-release
-brew install git-semver-release
+brew install michalstutzmann/git-semver-release/git-semver-release
 ```
 
 or:
 
 ```shell
-curl -fsSL https://raw.githubusercontent.com/michalstutzmann/git-semver-release/main/git-semver-release \
+curl -fsSL https://github.com/michalstutzmann/git-semver-release/releases/latest/download/git-semver-release \
   --output ~/.local/bin/git-semver-release && chmod +x ~/.local/bin/git-semver-release
 ```
 
-Then run:
+Then run (assuming the latest release is `v0.1.0` and three commits have been added since, the highest being a `feat:`):
 
 ```shell
 git-semver-release version
-# 0.1.1-alpha.3.abcdef0
+# 0.1.1-alpha.3.abcdef0      # next-patch pre-release identifier
 
 git-semver-release conventional --dry-run
-# Would release 0.2.0
+# Would release 0.2.0        # feat: in the new commits triggers a minor bump
 
 git-semver-release patch --dry-run
-# Would release 0.1.2
+# Would release 0.1.1        # explicit patch is always one increment from v0.1.0
 ```
 
 ## Why Git SemVer Release
@@ -82,7 +81,7 @@ Commit messages since the last release determine the bump:
 
 ```shell
 git-semver-release conventional --push
-git-semver-release minor --channel beta --push
+git-semver-release minor --push
 ```
 
 ## Why Use This Instead Of Heavier Release Tooling
@@ -113,14 +112,13 @@ Quick comparison:
 ### Homebrew
 
 ```shell
-brew tap michalstutzmann/git-semver-release
-brew install git-semver-release
+brew install michalstutzmann/git-semver-release/git-semver-release
 ```
 
 ### Manual
 
 ```shell
-curl -fsSL https://raw.githubusercontent.com/michalstutzmann/git-semver-release/main/git-semver-release \
+curl -fsSL https://github.com/michalstutzmann/git-semver-release/releases/latest/download/git-semver-release \
   --output ~/.local/bin/git-semver-release && chmod +x ~/.local/bin/git-semver-release
 ```
 
@@ -128,7 +126,7 @@ Make sure `~/.local/bin` is in your `PATH`.
 
 ### Docker
 
-A prebuilt image is published to GitHub Container Registry: [`ghcr.io/michalstutzmann/git-semver-release`](https://github.com/michalstutzmann/git-semver-release/pkgs/container/git-semver-release). Tags include `latest`, `edge` (built from `main`), and one per release (`X.Y.Z`, `X.Y`, `X`).
+A prebuilt image is published to GitHub Container Registry: [`ghcr.io/michalstutzmann/git-semver-release`](https://github.com/michalstutzmann/git-semver-release/pkgs/container/git-semver-release). Tags: `:latest` and `:X.Y.Z` (e.g. `:0.1.0`) on each release; `:X.Y.Z-alpha.N.sha` (e.g. `:0.1.1-alpha.5.abcdef0`) for branch builds in between.
 
 ```shell
 docker run --rm -v "$PWD:/home" ghcr.io/michalstutzmann/git-semver-release version
@@ -184,7 +182,7 @@ Changes:
 
 If you pass `MESSAGE`, it replaces the default annotation entirely. Use `$version` as a placeholder, for example `"Release $version"`.
 
-`--channel` creates a pre-release tag such as `v1.0.0-beta`. `--push` pushes the current branch and the created tag to `origin`. `--dry-run` prints what would be released without tagging or pushing.
+`--push` pushes the current branch and the created tag to `origin`. `--dry-run` prints what would be released without tagging or pushing. The `--channel` flag is accepted for symmetry with the `version` command but has no effect on explicit bumps — they always produce a plain `vMAJOR.MINOR.PATCH` tag.
 
 | Latest release tag | `patch` | `minor` | `major` |
 |-|-|-|-|
