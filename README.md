@@ -23,7 +23,7 @@ Then run (assuming the latest release is `v0.1.0` and three commits have been ad
 
 ```shell
 git-semver-release version
-# 0.1.1-alpha.3.abcdef0      # next-patch pre-release identifier
+# 0.1.1-main.3.abcdef0       # next-patch pre-release identifier (channel = branch name)
 
 git-semver-release conventional --dry-run
 # Would release 0.2.0        # feat: in the new commits triggers a minor bump
@@ -50,9 +50,9 @@ git-semver-release version
 
 Example output:
 
-- `0.1.0-alpha.1.abcdef0` for a repo with commits but no release tags yet
-- `0.1.1-alpha.3.abcdef0` for commits after `v0.1.0`
-- `0.1.2-alpha.3.abcdef0.dirty` when the working tree is dirty
+- `0.1.0-main.1.abcdef0` for a repo with commits but no release tags yet (channel defaults to the branch name, here `main`)
+- `0.1.1-main.3.abcdef0` for commits after `v0.1.0`
+- `0.1.2-main.3.abcdef0.dirty` when the working tree is dirty
 - `1.2.3` when `HEAD` is exactly on tag `v1.2.3`
 
 ### Create a release manually
@@ -126,7 +126,7 @@ Make sure `~/.local/bin` is in your `PATH`.
 
 ### Docker
 
-A prebuilt image is published to GitHub Container Registry: [`ghcr.io/michalstutzmann/git-semver-release`](https://github.com/michalstutzmann/git-semver-release/pkgs/container/git-semver-release). Tags: `:latest` and `:X.Y.Z` (e.g. `:0.1.0`) on each release; `:X.Y.Z-alpha.N.sha` (e.g. `:0.1.1-alpha.5.abcdef0`) for branch builds in between.
+A prebuilt image is published to GitHub Container Registry: [`ghcr.io/michalstutzmann/git-semver-release`](https://github.com/michalstutzmann/git-semver-release/pkgs/container/git-semver-release). Tags: `:latest` and `:X.Y.Z` (e.g. `:0.1.0`) on each release; `:X.Y.Z-CHANNEL.N.sha` (e.g. `:0.1.1-main.5.abcdef0`, where the channel defaults to the branch name) for branch builds in between.
 
 ```shell
 docker run --rm -v "$PWD:/home" ghcr.io/michalstutzmann/git-semver-release version
@@ -154,14 +154,14 @@ To push tags created inside the container, mount your Git credentials and pass `
 git-semver-release version
 ```
 
-Returns the current version without creating a tag. If `HEAD` is on a release tag, it returns that version exactly. Otherwise, it returns the next patch pre-release version. With no prior release, the initial pre-release is `0.1.0-alpha.N.sha` per the SemVer recommendation that initial development starts at `0.1.0`.
+Returns the current version without creating a tag. If `HEAD` is on a release tag, it returns that version exactly. Otherwise, it returns the next patch pre-release version. The pre-release channel defaults to the current branch name (normalized for SemVer); override it with `--channel`. With no prior release, the initial pre-release is `0.1.0-CHANNEL.N.sha` per the SemVer recommendation that initial development starts at `0.1.0`. The examples below assume the branch is `main`.
 
 | Latest release tag | Commits since release | Short SHA | Uncommitted changes | Output |
 |-|-|-|-|-|
-| *(none)* | 1 | `abcdef0` | no | `0.1.0-alpha.1.abcdef0` |
+| *(none)* | 1 | `abcdef0` | no | `0.1.0-main.1.abcdef0` |
 | `v0.1.0` | 0 | `abcdef0` | no | `0.1.0` |
-| `v0.1.0` | 1 | `abcdef1` | no | `0.1.1-alpha.1.abcdef1` |
-| `v0.1.1` | 1 | `abcdef1` | yes | `0.1.2-alpha.1.abcdef1.dirty` |
+| `v0.1.0` | 1 | `abcdef1` | no | `0.1.1-main.1.abcdef1` |
+| `v0.1.1` | 1 | `abcdef1` | yes | `0.1.2-main.1.abcdef1.dirty` |
 
 ### `major`, `minor`, `patch`
 
@@ -190,7 +190,7 @@ If you pass `MESSAGE`, it replaces the default annotation entirely. Use `$versio
 | `v0.1.0` | `v0.1.1` | `v0.2.0` | `v1.0.0` |
 | `v1.2.3` | `v1.2.4` | `v1.3.0` | `v2.0.0` |
 
-With no prior release, both `patch` and `minor` finalize the initial pre-release `0.1.0-alpha.N.sha` into `v0.1.0` (per the SemVer recommendation that initial development starts at `0.1.0`). Only `major` jumps past it to `v1.0.0`.
+With no prior release, both `patch` and `minor` finalize the initial pre-release `0.1.0-CHANNEL.N.sha` into `v0.1.0` (per the SemVer recommendation that initial development starts at `0.1.0`). Only `major` jumps past it to `v1.0.0`.
 
 ### `conventional`
 
@@ -243,7 +243,7 @@ git-semver-release --help    # also -h
 Customize behavior with `.git-semver-release.properties`:
 
 ```properties
-channel=alpha
+channel=beta
 dirty_indicator=dirty
 pre_release_format=$channel$separator$commit_count$separator$commit_short_sha$separator$dirty_indicator
 tag_prefix=v
@@ -251,7 +251,7 @@ tag_prefix=v
 
 | Property | Default | Description |
 |-|-|-|
-| `channel` | `alpha` | Default pre-release channel |
+| `channel` | *current branch name* | Default pre-release channel (override per-invocation with `--channel`) |
 | `dirty_indicator` | `dirty` | Added when the working tree has uncommitted changes |
 | `pre_release_format` | `$channel$separator...` | Template for pre-release identifiers |
 | `tag_prefix` | `v` | Prefix for Git tags |
@@ -260,7 +260,7 @@ Variables available in `pre_release_format`:
 
 | Variable | Replaced with |
 |-|-|
-| `$channel` | Value of `channel` |
+| `$channel` | Value of `channel` (the current branch name by default), with non-alphanumeric characters normalized to `-` |
 | `$separator` | `.` |
 | `$commit_count` | Number of commits since the last release tag |
 | `$commit_short_sha` | Abbreviated SHA of the latest commit |

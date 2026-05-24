@@ -94,7 +94,7 @@ teardown() {
 
   run ./git-semver-release version
   assert_success
-  assert_output --regexp '^0\.1\.0-alpha\.1\.[0-9a-f]{7}$'
+  assert_output --regexp '^0\.1\.0-main\.1\.[0-9a-f]{7}$'
 }
 
 @test "Create initial conventional release" {
@@ -741,7 +741,7 @@ teardown() {
 
   run ./git-semver-release version
   assert_success
-  assert_output --regexp '^1\.0\.1-alpha\.2\.[0-9a-f]{7}$'
+  assert_output --regexp '^1\.0\.1-main\.2\.[0-9a-f]{7}$'
 }
 
 @test "Default command without arguments behaves like version" {
@@ -752,7 +752,7 @@ teardown() {
 
   run ./git-semver-release
   assert_success
-  assert_output --regexp '^0\.1\.0-alpha\.1\.[0-9a-f]{7}$'
+  assert_output --regexp '^0\.1\.0-main\.1\.[0-9a-f]{7}$'
 }
 
 @test "--help prints usage and exits 0" {
@@ -823,6 +823,30 @@ teardown() {
   assert_output --regexp '^0\.1\.0-beta\.1\.[0-9a-f]{7}$'
 }
 
+@test "Default channel is the current branch name, normalized" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Switch to a branch whose name needs normalizing for SemVer
+  git checkout -b feature/login 2>/dev/null
+
+  run ./git-semver-release version
+  assert_success
+  assert_output --regexp '^0\.1\.0-feature-login\.1\.[0-9a-f]{7}$'
+}
+
+@test "Explicit --channel overrides the branch-name default" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+
+  run ./git-semver-release version --channel rc
+  assert_success
+  assert_output --regexp '^0\.1\.0-rc\.1\.[0-9a-f]{7}$'
+}
+
 @test "Calculate version at release tag with dirty tree" {
   # Initialize Git repository
   initialize
@@ -861,7 +885,7 @@ teardown() {
 
   run ./git-semver-release version
   assert_success
-  assert_output --regexp '^0\.1\.0-alpha\.1\.[0-9a-f]{7}$'
+  assert_output --regexp '^0\.1\.0-main\.1\.[0-9a-f]{7}$'
 }
 
 @test "Auto-generated tag message includes changelog of commits since last release" {
@@ -885,6 +909,8 @@ teardown() {
 
 initialize() {
   git init
+  # Pin the branch name so the default channel (the branch name) is deterministic
+  git symbolic-ref HEAD refs/heads/main
   git config user.name 'test'
   git config user.email 'test'
 }

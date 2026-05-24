@@ -170,12 +170,16 @@ version() {
   if [[ -n $version_type ]]; then
     printf '%s\n' "$version"
   else
+    # The channel defaults to the branch name, which may contain characters
+    # that are invalid in a SemVer pre-release identifier; normalize them.
+    local clean_channel="${channel//[^0-9A-Za-z-]/-}"
+
     if [[ -n $commit_count ]]; then
       pre_release="$pre_release_format"
       local branch
       branch="$(get_git_branch)"
       branch="${branch//[^0-9A-Za-z-]/-}"
-      pre_release="${pre_release//\$channel/"$channel"}"
+      pre_release="${pre_release//\$channel/"$clean_channel"}"
       pre_release="${pre_release//\$branch/"$branch"}"
       pre_release="${pre_release//\$commit_count/"$commit_count"}"
       pre_release="${pre_release//\$commit_short_sha/"$commit_short_sha"}"
@@ -190,7 +194,7 @@ version() {
       local branch
       branch="$(get_git_branch)"
       branch="${branch//[^0-9A-Za-z-]/-}"
-      pre_release="${pre_release//\$channel/"$channel"}"
+      pre_release="${pre_release//\$channel/"$clean_channel"}"
       pre_release="${pre_release//\$branch/"$branch"}"
       pre_release="${pre_release//\$commit_count/}"
       pre_release="${pre_release//\$commit_short_sha/}"
@@ -309,7 +313,7 @@ usage() {
     '  release-tag          Print the release tag at HEAD' \
     '' \
     'Options:' \
-    '  --channel NAME       Pre-release channel name (default: alpha)' \
+    '  --channel NAME       Pre-release channel name (default: current branch)' \
     '  --push               Push commits and created tag to origin' \
     '  --dry-run            Print the version that would be released without tagging' \
     '  --version            Print the git-semver-release version' \
@@ -349,7 +353,7 @@ main() {
       done < .git-semver-release.properties
   fi
 
-  local channel="${config["channel"]:-alpha}"
+  local channel="${config["channel"]:-$(get_git_branch)}"
   local -r dirty_indicator="${config["dirty_indicator"]:-dirty}"
   local -r pre_release_format="${config["pre_release_format"]:-\$channel\$separator\$commit_count\$separator\$commit_short_sha\$separator\$dirty_indicator}"
   local -r tag_prefix="${config["tag_prefix"]-v}"
