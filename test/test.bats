@@ -859,7 +859,9 @@ teardown() {
 
   run ./git-semver-release version
   assert_success
-  assert_output --regexp '\.dirty$'
+  # A dirty tree is uncommitted work ahead of the release, so the projected
+  # version bumps the patch just like committed work would.
+  assert_output --regexp '^1\.2\.4-main\.dirty$'
 }
 
 @test "Fail with explicit error when describe output is unrecognized" {
