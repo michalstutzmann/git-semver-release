@@ -154,13 +154,14 @@ To push tags created inside the container, mount your Git credentials and pass `
 git-semver-release version
 ```
 
-Returns the current version without creating a tag. If `HEAD` is on a release tag, it returns that version exactly. Otherwise, it returns the next patch pre-release version. The pre-release channel defaults to the current branch name (normalized for SemVer); override it with `--channel`. With no prior release, the initial pre-release is `0.1.0-CHANNEL.N.sha` per the SemVer recommendation that initial development starts at `0.1.0`. The examples below assume the branch is `main`.
+Returns the current version without creating a tag. If `HEAD` is on a release tag and the working tree is clean, it returns that version exactly. Otherwise (commits since the release, or uncommitted changes), it returns the next patch pre-release version. The pre-release channel defaults to the current branch name (normalized for SemVer); override it with `--channel`. With no prior release, the initial pre-release is `0.1.0-CHANNEL.N.sha` per the SemVer recommendation that initial development starts at `0.1.0`. The examples below assume the branch is `main`.
 
 | Latest release tag | Commits since release | Short SHA | Uncommitted changes | Output |
 |-|-|-|-|-|
 | *(none)* | 1 | `abcdef0` | no | `0.1.0-main.1.abcdef0` |
 | `v0.1.0` | 0 | `abcdef0` | no | `0.1.0` |
 | `v0.1.0` | 1 | `abcdef1` | no | `0.1.1-main.1.abcdef1` |
+| `v0.1.1` | 0 | `abcdef1` | yes | `0.1.2-main.dirty` |
 | `v0.1.1` | 1 | `abcdef1` | yes | `0.1.2-main.1.abcdef1.dirty` |
 
 ### `major`, `minor`, `patch`
