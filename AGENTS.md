@@ -1,4 +1,4 @@
-# Git SemVer Release Agent Guide
+# Agent Instructions
 
 This file is for AI/code agents working in this repository. Keep it focused on implementation context, local workflows, and project-specific traps. User-facing usage belongs in `README.md`.
 
