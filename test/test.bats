@@ -810,6 +810,19 @@ teardown() {
   assert_output --regexp '^0\.1\.0-feature-login\.1\.[0-9a-f]{7}$'
 }
 
+@test "Custom pre_release_format collapses empty separator slots" {
+  # Initialize Git repository
+  initialize
+  # Custom format that intentionally leaves adjacent separators after rendering
+  printf 'pre_release_format=$channel$separator$separator$dirty_indicator\n' > .git-semver-release.properties
+  # Create initial commit
+  commit 'Initial'
+
+  run ./git-semver-release version
+  assert_success
+  assert_output '0.1.0-main'
+}
+
 @test "Use custom channel from config" {
   # Initialize Git repository
   initialize
@@ -845,6 +858,23 @@ teardown() {
   run ./git-semver-release version --channel rc
   assert_success
   assert_output --regexp '^0\.1\.0-rc\.1\.[0-9a-f]{7}$'
+}
+
+@test "Dirty release tag uses custom pre_release_format and collapses dotted dirty indicator" {
+  # Initialize Git repository
+  initialize
+  # Configure a dirty indicator with repeated dots to exercise pre-release cleanup
+  printf 'dirty_indicator=work..tree\npre_release_format=$channel$separator$dirty_indicator\n' > .git-semver-release.properties
+  # Create initial commit
+  commit 'Initial'
+  # Create release tag
+  tag "v1.2.3"
+  # Dirty the working tree
+  printf 'modified' > "$TEST_FILE"
+
+  run ./git-semver-release version
+  assert_success
+  assert_output '1.2.4-main.work.tree'
 }
 
 @test "Calculate version at release tag with dirty tree" {

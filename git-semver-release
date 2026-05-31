@@ -2,6 +2,8 @@
 
 readonly VERSION='dev'
 
+# Repository state helpers. These intentionally return shell status codes so
+# callers can use them directly in `if` and `|| return` expressions.
 is_repository() {
   if git rev-parse --git-dir > /dev/null 2>&1; then
     return 0
@@ -21,8 +23,10 @@ has_commits() {
 get_describe_output() {
   local -r tag_prefix="$1"
 
+  # Only stable SemVer tags are considered release anchors. Pre-release tags
+  # are ignored so a tag like v1.2.3-rc.1 never becomes the base version.
   git describe --always --match "${tag_prefix}[0-9]*.[0-9]*.[0-9]*" --exclude "${tag_prefix}*-*" 2> /dev/null || {
-   printf ''
+    printf ''
   }
 }
 
@@ -45,6 +49,8 @@ is_dirty() {
 get_latest_release_tag() {
   local -r tag_prefix="$1"
 
+  # Used when scanning history since the last release. This is separate from
+  # get_describe_output(), which may return a commit SHA when no release exists.
   git describe --abbrev=0 --match "${tag_prefix}[0-9]*.[0-9]*.[0-9]*" --exclude "${tag_prefix}*-*" 2>/dev/null || printf ''
 }
 
@@ -56,6 +62,7 @@ get_bump_type_for_commits_since_tag() {
   local -r tag="$1"
   local bump_type=''
 
+  # With no previous release, scan the whole repository history.
   local range='HEAD'
   if [[ -n $tag ]]; then
     range="$tag..HEAD"
@@ -68,6 +75,8 @@ get_bump_type_for_commits_since_tag() {
   for hash in $commit_hashes; do
     message="$(git log -1 --format=%B "$hash")"
 
+    # Precedence is SemVer-shaped: breaking changes win immediately, features
+    # outrank fixes, and fixes/perf only matter if no feature has been seen.
     if [[ $message =~ ^[a-zA-Z]+(\(.+\))?!:\ .+$ || $message =~ BREAKING\ CHANGE:\ .+ ]]; then
       bump_type='major'
       break
@@ -95,9 +104,30 @@ get_changelog_since_tag() {
 get_latest_tag_for_commit_pointed_by_tag() {
   local -r tag="$1"
 
+  # git describe can choose any matching tag when several point at one commit.
+  # Re-sort all tags on that commit so `version` reports the highest release.
   local commit_sha
   commit_sha="$(git rev-list -1 "$tag")"
   git tag --points-at "$commit_sha" --list --sort=-version:refname | head -1
+}
+
+# Substitute template variables into the pre-release format and tidy separators.
+# Replacing $separator last keeps literal dots from configured values subject to
+# the same collapse-and-trim cleanup as generated separators.
+render_pre_release() {
+  local out="$1"
+  local -r channel="$2" branch="$3" commit_count="$4" commit_short_sha="$5" dirty_suffix="$6"
+
+  out="${out//\$channel/"$channel"}"
+  out="${out//\$branch/"$branch"}"
+  out="${out//\$commit_count/"$commit_count"}"
+  out="${out//\$commit_short_sha/"$commit_short_sha"}"
+  out="${out//\$dirty_indicator/"$dirty_suffix"}"
+  out="${out//\$separator/.}"
+  out="$(printf '%s' "$out" | tr -s '.')"
+  out="${out%.}"
+  out="${out#.}"
+  printf '%s' "$out"
 }
 
 version() {
@@ -105,24 +135,33 @@ version() {
   local -r pre_release_format="$2"
   local -r dirty_indicator="$3"
   local -r tag_prefix="$4"
-  local -r version_type="$5"
+  local -r version_type="$5" # major, minor or patch
 
   local git_describe_output
   git_describe_output="$(get_describe_output "$tag_prefix")"
+
+  local escaped_tag_prefix
+  escaped_tag_prefix="$(escape_regex "$tag_prefix")"
+
+  # `git describe` returns one of two shapes that matter here:
+  #   v1.2.3              when HEAD is exactly at a stable release tag
+  #   v1.2.3-4-gabcdef0   when HEAD is 4 commits past that release
+  # If no release exists, `--always` returns the short commit SHA instead.
+  local -r describe_pattern="^${escaped_tag_prefix}([0-9]+)\.([0-9]+)\.([0-9]+)(-([0-9]+))?(-g([a-f0-9]{7,}))?$"
+  local -r tag_pattern="^${escaped_tag_prefix}([0-9]+)\.([0-9]+)\.([0-9]+)$"
 
   local major_version
   local minor_version
   local patch_version
   local commit_count
   local commit_short_sha
+  local is_repo_dirty=0
 
-  local escaped_tag_prefix
-  escaped_tag_prefix="$(escape_regex "$tag_prefix")"
+  if [[ -z $version_type ]] && is_dirty; then
+    is_repo_dirty=1
+  fi
 
-  # Release exists with possible additional commits
-  local -r describe_pattern="^${escaped_tag_prefix}([0-9]+)\.([0-9]+)\.([0-9]+)(-([0-9]+))?(-g([a-f0-9]{7,}))?$"
-  local -r tag_pattern="^${escaped_tag_prefix}([0-9]+)\.([0-9]+)\.([0-9]+)$"
-
+  # Case 1: there is a stable release tag reachable from HEAD.
   if [[ "$git_describe_output" =~ $describe_pattern ]]; then
     major_version="${BASH_REMATCH[1]}"
     minor_version="${BASH_REMATCH[2]}"
@@ -137,6 +176,8 @@ version() {
       patch_version="${BASH_REMATCH[3]}"
     fi
 
+    # Explicit releases obey the requested bump. Plain `version` bumps patch
+    # only when HEAD has moved past the tag or the worktree is dirty.
     if [[ $version_type == 'major' ]]; then
       ((major_version++))
       minor_version='0'
@@ -144,10 +185,11 @@ version() {
     elif [[ $version_type == 'minor' ]]; then
       ((minor_version++))
       patch_version='0'
-    elif [[ $version_type == 'patch' || $commit_count -gt 0 ]] || is_dirty; then
+    elif [[ $version_type == 'patch' || $commit_count -gt 0 || $is_repo_dirty -eq 1 ]]; then
       ((patch_version++))
     fi
-  # Release does not exist but there are commits
+  # Case 2: there are commits, but no stable release tag yet. Start at 0.1.0
+  # per the SemVer recommendation for initial development.
   elif [[ $git_describe_output =~ ^([a-f0-9]{7,})$ ]]; then
     major_version='0'
     minor_version='1'
@@ -167,55 +209,37 @@ version() {
 
   local version="$major_version.$minor_version.$patch_version"
 
+  # major/minor/patch callers create stable tags, so they never include a
+  # pre-release suffix even if --channel was accepted by the parser.
   if [[ -n $version_type ]]; then
     printf '%s\n' "$version"
-  else
-    # The channel defaults to the branch name, which may contain characters
-    # that are invalid in a SemVer pre-release identifier; normalize them.
-    local clean_channel="${channel//[^0-9A-Za-z-]/-}"
-
-    if [[ -n $commit_count ]]; then
-      pre_release="$pre_release_format"
-      local branch
-      branch="$(get_git_branch)"
-      branch="${branch//[^0-9A-Za-z-]/-}"
-      pre_release="${pre_release//\$channel/"$clean_channel"}"
-      pre_release="${pre_release//\$branch/"$branch"}"
-      pre_release="${pre_release//\$commit_count/"$commit_count"}"
-      pre_release="${pre_release//\$commit_short_sha/"$commit_short_sha"}"
-
-      if is_dirty; then
-        pre_release="${pre_release//\$dirty_indicator/"$dirty_indicator"}"
-      else
-        pre_release="${pre_release//\$dirty_indicator/}"
-      fi
-    else
-      pre_release="$pre_release_format"
-      local branch
-      branch="$(get_git_branch)"
-      branch="${branch//[^0-9A-Za-z-]/-}"
-      pre_release="${pre_release//\$channel/"$clean_channel"}"
-      pre_release="${pre_release//\$branch/"$branch"}"
-      pre_release="${pre_release//\$commit_count/}"
-      pre_release="${pre_release//\$commit_short_sha/}"
-
-      if is_dirty; then
-        pre_release="${pre_release//\$dirty_indicator/"$dirty_indicator"}"
-      else
-        pre_release=''
-      fi
-    fi
-
-    pre_release="${pre_release//\$separator/.}"
-    pre_release="$(printf '%s' "$pre_release" | tr -s '.')"
-    pre_release="${pre_release%.}"
-    pre_release="${pre_release#.}"
-
-    version="$version-$pre_release"
-    version="${version%-}"
-
-    printf '%s\n' "$version"
+    return 0
   fi
+
+  # The channel defaults to the branch name, which may contain characters
+  # that are invalid in a SemVer pre-release identifier; normalize them.
+  local -r clean_channel="${channel//[^0-9A-Za-z-]/-}"
+  local branch
+  branch="$(get_git_branch)"
+  branch="${branch//[^0-9A-Za-z-]/-}"
+
+  local dirty_suffix=''
+  if [[ $is_repo_dirty -eq 1 ]]; then
+    dirty_suffix="$dirty_indicator"
+  fi
+
+  # A clean checkout sitting exactly on a release tag has no pre-release suffix.
+  local pre_release=''
+  if [[ -n $commit_count || $is_repo_dirty -eq 1 ]]; then
+    pre_release="$(render_pre_release \
+      "$pre_release_format" "$clean_channel" "$branch" \
+      "$commit_count" "$commit_short_sha" "$dirty_suffix")"
+  fi
+
+  version="$version-$pre_release"
+  version="${version%-}"
+
+  printf '%s\n' "$version"
 }
 
 release() {
@@ -233,6 +257,8 @@ release() {
 
   local -r tag="${tag_prefix}$version"
 
+  # Dry runs still calculate the exact release version, but leave tags/remotes
+  # untouched so callers can preview automation safely.
   if (( dry_run )); then
     printf 'Would release %s\n' "$version" 1>&2
     return 0
@@ -241,6 +267,7 @@ release() {
   if [[ -n $message ]]; then
     git tag --annotate "$tag" --message "${message//\$version/"$version"}"
   else
+    # The default annotated tag message doubles as a compact changelog.
     local latest_release_tag
     latest_release_tag="$(get_latest_release_tag "$tag_prefix")"
 
@@ -273,6 +300,8 @@ release_tag() {
   local escaped_tag_prefix
   escaped_tag_prefix="$(escape_regex "$tag_prefix")"
 
+  # Only stable release tags count. This lets callers distinguish being on a
+  # final release from being on a pre-release tag at the same commit.
   local tag
   tag="$(git tag --points-at HEAD --list "${tag_prefix}*" --sort=-version:refname 2>/dev/null | grep -E "^${escaped_tag_prefix}[0-9]+\.[0-9]+\.[0-9]+$" | head -1)"
 
@@ -291,6 +320,7 @@ conventional() {
   local latest_tag
   latest_tag="$(get_latest_release_tag "$tag_prefix")"
 
+  # Conventional mode is just auto-detection plus the regular release path.
   local version_type
   version_type="$(get_bump_type_for_commits_since_tag "$latest_tag")" || return 1
 
@@ -321,6 +351,8 @@ usage() {
 }
 
 main() {
+  # Help and tool version should work outside a Git repository, so handle them
+  # before any repository validation.
   for arg in "$@"; do
     if [[ $arg == '--help' || $arg == '-h' ]]; then
       usage
@@ -332,8 +364,8 @@ main() {
   done
 
   if ! command -v git >/dev/null 2>&1; then
-        printf 'error: Git is not installed or not on PATH\n' 1>&2
-        return 1
+    printf 'error: Git is not installed or not on PATH\n' 1>&2
+    return 1
   fi
 
   if ! is_repository; then
@@ -348,9 +380,10 @@ main() {
 
   declare -A config
   if [[ -f .git-semver-release.properties ]]; then
-      while IFS='=' read -r key value; do
-         config["$key"]="$value"
-      done < .git-semver-release.properties
+    # The config file is deliberately simple: one key=value pair per line.
+    while IFS='=' read -r key value; do
+      config["$key"]="$value"
+    done < .git-semver-release.properties
   fi
 
   local channel="${config["channel"]:-$(get_git_branch)}"
@@ -362,6 +395,8 @@ main() {
   local dry_run=0
   local consume_channel=0
   local args=()
+  # Keep command arguments positional while consuming flags that can appear
+  # around them, e.g. `patch --dry-run` and `version --channel rc`.
   for arg in "$@"; do
     if (( consume_channel )); then
       channel="$arg"
@@ -381,8 +416,8 @@ main() {
 
   case "$mode" in
     version)
-       version "$channel" "$pre_release_format" "$dirty_indicator" "$tag_prefix" || return 4
-       ;;
+      version "$channel" "$pre_release_format" "$dirty_indicator" "$tag_prefix" || return 4
+      ;;
     release-tag)
       release_tag "$tag_prefix"
       ;;
@@ -392,8 +427,10 @@ main() {
         return 5
       fi
 
+      local -r version_type="$mode"
+
       local -r message="${args[1]}"
-      release "$channel" "$pre_release_format" "$dirty_indicator" "$tag_prefix" "$message" "$mode" "$push" "$dry_run" || return 6
+      release "$channel" "$pre_release_format" "$dirty_indicator" "$tag_prefix" "$message" "$version_type" "$push" "$dry_run" || return 6
       ;;
     conventional)
       if is_dirty; then

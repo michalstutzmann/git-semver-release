@@ -1,70 +1,115 @@
-# Git SemVer Release AI Agent Instructions
+# Git SemVer Release Agent Guide
 
-This file provides guidance to AI agents working with code in this repository.
+This file is for AI/code agents working in this repository. Keep it focused on implementation context, local workflows, and project-specific traps. User-facing usage belongs in `README.md`.
 
-## Project Overview
+## Project Shape
 
-git-semver-release is a single Bash script (`git-semver-release`, ~410 lines) that calculates and creates semantic version tags from Git history. It supports manual bumps (major/minor/patch), Conventional Commits-based bumps, and pre-release channels.
+- The product is a single Bash executable: `git-semver-release`.
+- There is no build step and no runtime dependency beyond Bash and Git.
+- Tests are Bats tests in `test/test.bats`; helpers are Git submodules under `test/test_helper/`.
+- Release packaging also touches `publish` and `Dockerfile`, which bake the script version into release artifacts.
 
-## Prerequisites
+## Required Local Tools
 
-- Git 2.13+ (uses `git describe --exclude`)
 - Bash 4+
+- Git 2.13+ (`git describe --exclude` is used)
+- Bats 1.5.0+ for tests
 
-## Testing
-
-Tests use the [Bats](https://github.com/bats-core/bats-core) framework (v1.5.0+). Test helpers are Git submodules under `test/`.
+## Common Commands
 
 ```bash
-# Run full test suite
+# Syntax check
+bash -n git-semver-release
+
+# Full test suite
 bats test/test.bats
 
-# Run a single test by name
+# One focused test
 bats test/test.bats --filter "test name pattern"
 
-# Initialize submodules if test helpers are missing
+# Initialize test helper submodules if missing
 git submodule update --init --recursive
 ```
 
-## Releasing
+Prefer `bash -n git-semver-release` plus the focused Bats test while iterating, then run the full Bats suite before finishing behavior changes.
+
+## Architecture Map
+
+- `main()` handles global `--help`/`--version` before repository checks, reads `.git-semver-release.properties`, parses flags, then dispatches.
+- `version()` computes the displayed or releasable SemVer from `git describe`, dirty state, configured tag prefix, and pre-release formatting.
+- `release()` calls `version()` with an explicit bump type, creates an annotated Git tag, and optionally pushes branch and tag.
+- `conventional()` determines `major`/`minor`/`patch` from commit messages, then delegates to `release()`.
+- `release_tag()` prints the stable release tag at `HEAD`, or an empty line when `HEAD` is not on a release.
+- `get_describe_output()` is for version calculation and may return a short SHA when no release exists.
+- `get_latest_release_tag()` is for history ranges in changelog/conventional release logic.
+
+## Behavior Invariants
+
+- Stable release tags are `vMAJOR.MINOR.PATCH` by default. `tag_prefix` can be configured, including to an empty string.
+- Pre-release tags such as `v1.2.3-rc.1` must not become stable release anchors.
+- With no prior release:
+  - `version` reports `0.1.0-CHANNEL.N.sha` by default.
+  - `patch` and `minor` release `v0.1.0`.
+  - `major` releases `v1.0.0`.
+- After a release tag, commits or a dirty worktree make `version` project the next patch pre-release.
+- A clean checkout exactly on a stable release tag prints the stable version without a pre-release suffix.
+- Explicit `major`, `minor`, and `patch` releases always create plain stable tags; `--channel` is accepted but has no effect there.
+- The default pre-release channel is the current branch name normalized for SemVer, not a fixed `alpha`.
+- `pre_release_format` supports `$channel`, `$branch`, `$commit_count`, `$commit_short_sha`, `$dirty_indicator`, and `$separator`.
+- `$branch` is retained for backwards compatibility even though `$channel` is the preferred template variable.
+- `render_pre_release()` collapses repeated dots and trims leading/trailing dots after template substitution.
+- `major`/`minor`/`patch` and `conventional` must fail on a dirty working tree.
+- `release-tag` should work even when the working tree is dirty, and should ignore pre-release tags.
+
+## Conventional Commit Rules
+
+`get_bump_type_for_commits_since_tag()` scans commits since the latest stable release tag, or all history if none exists.
+
+- `type!:` and `BREAKING CHANGE:` trigger `major`.
+- `feat:` triggers `minor` unless a breaking change is found.
+- `fix:` and `perf:` trigger `patch` unless a feature or breaking change is found.
+- Non-releasable commits produce no bump; top-level `conventional` exits with code `7`.
+
+## Configuration File
+
+`.git-semver-release.properties` is deliberately simple: one `key=value` per line. Supported keys:
+
+- `channel`
+- `dirty_indicator`
+- `pre_release_format`
+- `tag_prefix`
+
+Do not add complex parsing unless the change is explicitly requested and tested; current behavior does not handle quoting, escaping, comments, or multi-line values.
+
+## Version Baking
+
+Keep this exact source line unchanged:
 
 ```bash
-git-semver-release (major|minor|patch) [--push] [--dry-run] [MESSAGE]
-git-semver-release conventional [--push] [--dry-run] [MESSAGE]
-git-semver-release release-tag
+readonly VERSION='dev'
 ```
 
-`--channel <name>` is accepted by the parser on every command for symmetry, but only affects the pre-release suffix produced by `version` (and the implicit no-arg invocation). Explicit bumps always tag a plain `vMAJOR.MINOR.PATCH`.
+Both `publish` and `Dockerfile` substitute that line using a regex anchored to the literal `dev` value.
 
-## Architecture
+## Exit Codes From `main()`
 
-The entire tool is a single Bash script with no external dependencies beyond Git. There is no build step.
+- `0` success
+- `1` Git not installed
+- `2` not a Git repository
+- `3` no commits yet
+- `4` `version` command failed
+- `5` dirty working tree for release commands
+- `6` explicit release failed
+- `7` conventional release failed
 
-**Command dispatch:** `main()` parses `.git-semver-release.properties` (if present), processes CLI flags (`--push`, `--channel`, `--dry-run`), then routes to a command function.
+Helper functions use normal shell truthiness internally; do not expose their return codes as new top-level meanings without updating tests and docs.
 
-**Commands:** `version` (calculates version without tagging), `major`/`minor`/`patch` (create release tags), `conventional` (auto-detect bump type from commit messages), `release-tag` (prints the tag at HEAD when on a release, or an empty string otherwise). `--help`/`-h` and `--version` short-circuit before the repo check, so they work outside a Git repo. Any unrecognized command (or no command) falls through to `version`.
+## Editing Guidance
 
-**Version calculation flow:** `version()` calls `get_describe_output()` (which runs `git describe --match` against stable-version tags) and parses the result to extract the latest tag, distance, and short SHA, then assembles the pre-release version string from branch name, commit count, and channel. `get_latest_release_tag()` is a separate helper used by `release()` (to drive the changelog) and `conventional()` (to scope the commit scan), not by `version()` itself. With no prior release, the baseline is `0.1.0` (per the SemVer recommendation): `version` advertises `0.1.0-CHANNEL.N.sha`, both `patch` and `minor` finalize to `v0.1.0`, and `major` jumps to `v1.0.0`. Past `v0.1.0` the standard bump rules apply.
-
-The pre-release channel defaults to the current branch name (normalized for SemVer in `version()` via `clean_channel`), not a fixed `alpha`; `--channel` or the `channel` property override it. The `$branch` template variable is retained alongside `$channel` for backward compatibility.
-
-**Release flow:** `release()` calls `version()` for the next version, generates a changelog via `get_changelog_since_tag()`, creates an annotated Git tag, and optionally pushes.
-
-**Conventional Commits:** `get_bump_type_for_commits_since_tag()` uses regex to scan commit messages for `feat`/`fix`/`BREAKING CHANGE` patterns to determine the bump type, then delegates to `release()`.
-
-**`--version` baking:** The script ships with `readonly VERSION='dev'` at the top. The `publish` script (for the GitHub release asset) and the `Dockerfile` (via `ARG VERSION` + `sed`) substitute the resolved version at release time. Don't change the literal `'dev'` value in source — both substitution sites match `^readonly VERSION='dev'$` exactly.
-
-## Exit Codes
-
-These are the return codes from `main()`:
-
-- 0 = success
-- 1 = Git not installed
-- 2 = not a Git repository
-- 3 = no commits yet
-- 4 = `version` command failed
-- 5 = dirty working tree (for `major`/`minor`/`patch` and `conventional`)
-- 6 = `release` failed (for `major`/`minor`/`patch`)
-- 7 = `conventional` failed (e.g. no releasable commits)
-
-Internal helper functions (`is_repository`, `has_commits`, etc.) return 0/1 but those propagate through the calling command's exit code, not as distinct top-level codes.
+- Keep the implementation in one Bash file unless there is a strong reason to split it.
+- Prefer small, explicit Bash over clever one-liners.
+- Quote variables used in Git commands and string substitutions.
+- Use `local`/`local -r` consistently inside functions.
+- When changing version behavior, add or update Bats coverage near the related existing tests.
+- Preserve `--help` and `--version` behavior outside a Git repository.
+- Avoid changing release packaging (`publish`, `Dockerfile`) unless the version-baking flow is part of the task.
