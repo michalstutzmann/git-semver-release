@@ -4,6 +4,15 @@ Version your project from Git tags with a single Bash script. No language-specif
 
 Use it as a local CLI or a [Docker image](#docker).
 
+It is useful when you want one small command that can:
+
+- Print a SemVer-compatible build version from the current Git state.
+- Create annotated release tags with explicit `major`, `minor`, or `patch` bumps.
+- Infer release bumps from Conventional Commit messages.
+- Produce branch/commit-based pre-release versions for CI without editing package files.
+
+It does not publish packages, create GitHub Releases, or manage language-specific changelogs. It leaves those steps to your existing CI/deployment pipeline.
+
 ## Quickstart
 
 Install it:
@@ -32,9 +41,12 @@ git-semver-release patch --dry-run
 # Would release 0.1.1        # explicit patch is always one increment from v0.1.0
 ```
 
+For a brand-new repository with commits but no release tags yet, `git-semver-release version` starts from `0.1.0` and prints a pre-release such as `0.1.0-main.1.abcdef0`.
+
 ## Why Git SemVer Release
 
 - Single-file Bash tool that works across polyglot repos.
+- Does not require a project manifest such as `package.json`, `pom.xml`, `pyproject.toml`, or `build.gradle`.
 - Version calculation is built on `git describe`; release tagging and changelog generation are layered on top.
 - Works locally and in Docker builds.
 - Supports both explicit bump commands and [Conventional Commits](https://www.conventionalcommits.org/).
@@ -90,6 +102,7 @@ Use `git-semver-release` if you want:
 
 - Git-based version calculation without bringing in a Node, Ruby, or JVM release framework.
 - A version string you can reuse anywhere: Docker tags, Maven revisions, Gradle properties, SBT, shell scripts, custom deploy steps.
+- Release tags to remain the source of truth instead of committed version-file bumps.
 - A small tool that is easy to audit, vendor, and debug.
 
 Use something else if you need:
@@ -97,6 +110,7 @@ Use something else if you need:
 - Automated GitHub Releases or release notes publishing.
 - Registry publishing orchestration across npm, PyPI, Maven Central, and similar ecosystems.
 - Full changelog management beyond annotated Git tags.
+- Automatic updates to project files such as `package.json`, `pom.xml`, or `pyproject.toml`.
 
 Quick comparison:
 
@@ -105,6 +119,7 @@ Quick comparison:
 | `git-semver-release` | Small Git-based versioning and tagging in polyglot repos, with a Docker image | You handle downstream release publishing yourself |
 | `semantic-release` | Full automated releases to package registries and hosting platforms | Requires a larger Node-based release setup |
 | `release-please` | PR-driven release automation and release notes on GitHub | More opinionated around GitHub workflows and release PRs |
+| `bump2version` / `bump-my-version` | Updating version strings inside project files | File edits become part of the release workflow |
 | `git describe` | Raw Git-derived identifiers for builds and debugging | Not a SemVer release workflow and does not create release tags |
 
 ## Installation
