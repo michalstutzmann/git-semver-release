@@ -75,7 +75,7 @@ Commit messages since the last release determine the bump:
 
 - `fix:` or `perf:` -> patch
 - `feat:` -> minor
-- Any type with `!:` (e.g. `feat!:`, `refactor!:`) or a `BREAKING CHANGE:` footer -> major
+- A Conventional Commit type with `!:` (e.g. `feat!:`, `refactor!:`) or a `BREAKING CHANGE:` footer -> major
 
 ### Publish the tag immediately
 
@@ -228,7 +228,7 @@ When multiple commits are present, the highest bump type wins:
 git-semver-release release-tag
 ```
 
-Prints the tag at `HEAD` (e.g. `v1.2.3`) when it points to a release, or an empty string otherwise. Works regardless of whether the working tree is dirty.
+Prints the stable release tag at `HEAD` (e.g. `v1.2.3`) when it points to a release, or an empty string otherwise. Works regardless of whether the working tree is dirty, and ignores pre-release tags such as `v1.2.3-rc.1`.
 
 ### Global flags
 
@@ -241,7 +241,7 @@ git-semver-release --help    # also -h
 
 ## Configuration
 
-Customize behavior with `.git-semver-release.properties`:
+Customize behavior with `.git-semver-release.properties`. The file is intentionally simple: one `key=value` pair per line, with no quoting, escaping, comments, or multi-line values.
 
 ```properties
 channel=beta
@@ -265,8 +265,10 @@ Variables available in `pre_release_format`:
 | `$separator` | `.` |
 | `$commit_count` | Number of commits since the last release tag |
 | `$commit_short_sha` | Abbreviated SHA of the latest commit |
-| `$dirty_indicator` | `dirty_indicator` when the tree is dirty, otherwise empty |
+| `$dirty_indicator` | Value of `dirty_indicator` when the tree is dirty, otherwise empty |
 | `$branch` | Current branch with non-alphanumeric characters normalized to `-` |
+
+After the template is rendered, repeated dots are collapsed and leading/trailing dots are trimmed. That keeps custom formats valid when optional fields such as `$dirty_indicator` are empty.
 
 Example branch-based pre-release:
 
