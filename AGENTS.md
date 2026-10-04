@@ -39,7 +39,7 @@ Prefer `bash -n git-semver-release` plus the focused Bats test while iterating, 
 - `version()` computes the displayed or releasable SemVer from `git describe`, dirty state, configured tag prefix, and pre-release formatting.
 - `release()` calls `version()` with an explicit bump type, creates an annotated Git tag, and optionally pushes branch and tag.
 - `conventional()` determines `major`/`minor`/`patch` from commit messages, then delegates to `release()`.
-- `release_tag()` prints the stable release tag at `HEAD`, or an empty line when `HEAD` is not on a release.
+- `release_tag()` prints the stable release tag at `HEAD`, or an empty line when `HEAD` is not on a release or the working tree is dirty.
 - `get_describe_output()` is for version calculation and may return a short SHA when no release exists.
 - `get_latest_release_tag()` is for history ranges in changelog/conventional release logic.
 
@@ -59,7 +59,7 @@ Prefer `bash -n git-semver-release` plus the focused Bats test while iterating, 
 - `$branch` is retained for backwards compatibility even though `$channel` is the preferred template variable.
 - `render_pre_release()` collapses repeated dots and trims leading/trailing dots after template substitution.
 - `major`/`minor`/`patch` and `conventional` must fail on a dirty working tree.
-- `release-tag` should work even when the working tree is dirty, and should ignore pre-release tags.
+- `release-tag` must print an empty line on a dirty working tree (consistent with `version` reporting a dirty pre-release), and should ignore pre-release tags.
 
 ## Conventional Commit Rules
 

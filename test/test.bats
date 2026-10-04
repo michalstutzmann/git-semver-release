@@ -545,7 +545,7 @@ teardown() {
   assert_output 'v1.2.3'
 }
 
-@test "release-tag prints tag when HEAD is on a release with dirty tree" {
+@test "release-tag prints empty string when HEAD is on a release with dirty tree" {
   # Initialize Git repository
   initialize
   # Create initial commit
@@ -557,7 +557,7 @@ teardown() {
 
   run ./git-semver-release release-tag
   assert_success
-  assert_output 'v1.2.3'
+  assert_output ''
 }
 
 @test "release-tag prints empty string when HEAD is not on a release" {

@@ -297,6 +297,13 @@ $changelog"
 release_tag() {
   local -r tag_prefix="$1"
 
+  # A dirty worktree is not the release, matching version(), which reports a
+  # dirty pre-release there.
+  if is_dirty; then
+    printf '\n'
+    return 0
+  fi
+
   local escaped_tag_prefix
   escaped_tag_prefix="$(escape_regex "$tag_prefix")"
 

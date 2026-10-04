@@ -243,7 +243,7 @@ When multiple commits are present, the highest bump type wins:
 git-semver-release release-tag
 ```
 
-Prints the stable release tag at `HEAD` (e.g. `v1.2.3`) when it points to a release, or an empty string otherwise. Works regardless of whether the working tree is dirty, and ignores pre-release tags such as `v1.2.3-rc.1`.
+Prints the stable release tag at `HEAD` (e.g. `v1.2.3`) when it points to a release and the working tree is clean, or an empty string otherwise. A dirty working tree is not the release, so it prints an empty string there, consistent with `version` reporting a dirty pre-release. Pre-release tags such as `v1.2.3-rc.1` are ignored.
 
 ### Global flags
 
