@@ -1,6 +1,6 @@
-# Agent Instructions
+# Contributing
 
-This file is for AI/code agents working in this repository. Keep it focused on implementation context, local workflows, and project-specific traps. User-facing usage belongs in `README.md`.
+This guide is for anyone changing this repository, human or AI agent (`AGENTS.md` is a symlink to this file). It covers implementation context, local workflows, and project-specific traps. User-facing usage belongs in `README.md`.
 
 ## Project Shape
 
