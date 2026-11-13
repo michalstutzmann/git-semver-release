@@ -126,6 +126,42 @@ teardown() {
   assert_output --regexp '^0\.0\.1$'
 }
 
+@test "Get version of the highest release tag when a pre-release tag shares the commit" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create annotated release tag (git describe prefers it at the same commit)
+  tag "v1.0.0"
+  # Create higher lightweight release tag on the same commit
+  lightweight_tag "v1.1.0"
+  # Create pre-release tag that sorts above both release tags
+  lightweight_tag "v1.2.0-rc.1"
+
+  run ./git-semver-release version
+  assert_success
+  assert_output '1.1.0'
+}
+
+@test "Create patch release from the highest release tag when a pre-release tag shares the commit" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create annotated release tag (git describe prefers it at the same commit)
+  tag "v1.0.0"
+  # Create higher lightweight release tag on the same commit
+  lightweight_tag "v1.1.0"
+  # Create pre-release tag that sorts above both release tags
+  lightweight_tag "v1.2.0-rc.1"
+  # Create another commit
+  commit 'Second'
+
+  run ./git-semver-release patch
+  assert_success
+  assert_output '1.1.1'
+}
+
 @test "Create patch release without previous release" {
   # Initialize Git repository
   initialize
@@ -1031,6 +1067,42 @@ teardown() {
   run ./git-semver-release version
   assert_success
   assert_output --regexp '^0\.1\.0-main\.1\.[0-9a-f]{7}$'
+}
+
+@test "Build-metadata tag does not interfere with version calculation" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create initial release tag
+  tag "v1.0.0"
+  # Create another commit
+  commit 'Second'
+  # Create build-metadata tag (matches the release glob, not the regex)
+  lightweight_tag "v1.0.1+build.7"
+
+  run ./git-semver-release version
+  assert_success
+  assert_output --regexp '^1\.0\.1-main\.1\.[0-9a-f]{7}$'
+}
+
+@test "Conventional release ignores build-metadata tag as release anchor" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create initial release tag
+  tag "v1.0.0"
+  # A feat after the release must still count despite the build-metadata tag
+  commit 'feat: add search'
+  # Create build-metadata tag
+  lightweight_tag "v1.0.1+build.7"
+  # Create a fix commit
+  commit 'fix: typo'
+
+  run ./git-semver-release conventional
+  assert_success
+  assert_output '1.1.0'
 }
 
 @test "Auto-generated tag message includes changelog of commits since last release" {

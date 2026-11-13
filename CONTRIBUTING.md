@@ -42,12 +42,13 @@ Prefer `bash -n git-semver-release` plus the focused Bats test while iterating, 
 - `release_tag()` prints the stable release tag at `HEAD`, or an empty line when `HEAD` is not on a release or the working tree is dirty.
 - `get_describe_output()` is for version calculation and may return a short SHA when no release exists.
 - `get_latest_release_tag()` is for history ranges in changelog/conventional release logic.
+- `get_highest_release_tag_at()` picks the highest stable release tag on a commit. `version()` and `release_tag()` share it so they always agree when several tags point at one commit.
 
 ## Behavior Invariants
 
 - Stable release tags are `vMAJOR.MINOR.PATCH` by default. `tag_prefix` can be configured, including to an empty string.
-- Pre-release tags such as `v1.2.3-rc.1` must not become stable release anchors.
-- Annotated and lightweight stable tags are equally valid release anchors. Every `git describe` call that looks for releases must pass `--tags`; `git tag --points-at` already includes both kinds. Tags the tool creates are still annotated.
+- Pre-release tags such as `v1.2.3-rc.1` and build-metadata tags such as `v1.2.3+build.7` must not become stable release anchors. Every `git describe` call that looks for releases must exclude both `${tag_prefix}*-*` and `${tag_prefix}*+*`.
+- Annotated and lightweight stable tags are equally valid release anchors. Every `git describe` call that looks for releases must pass `--tags`; `git tag --points-at` already includes both kinds, but needs a commit (not an annotated tag name) to see them all. Tags the tool creates are still annotated.
 - With no prior release:
   - `version` reports `0.1.0-CHANNEL.N.sha` by default.
   - `patch` and `minor` release `v0.1.0`.

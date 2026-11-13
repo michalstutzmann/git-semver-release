@@ -23,10 +23,11 @@ has_commits() {
 get_describe_output() {
   local -r tag_prefix="$1"
 
-  # Only stable SemVer tags are considered release anchors. Pre-release tags
-  # are ignored so a tag like v1.2.3-rc.1 never becomes the base version.
+  # Only stable SemVer tags are considered release anchors. Pre-release and
+  # build-metadata tags are ignored so a tag like v1.2.3-rc.1 or v1.2.3+build.7
+  # never becomes the base version.
   # --tags makes lightweight tags count as well as annotated ones.
-  git describe --tags --always --match "${tag_prefix}[0-9]*.[0-9]*.[0-9]*" --exclude "${tag_prefix}*-*" 2> /dev/null || {
+  git describe --tags --always --match "${tag_prefix}[0-9]*.[0-9]*.[0-9]*" --exclude "${tag_prefix}*-*" --exclude "${tag_prefix}*+*" 2> /dev/null || {
     printf ''
   }
 }
@@ -52,8 +53,9 @@ get_latest_release_tag() {
 
   # Used when scanning history since the last release. This is separate from
   # get_describe_output(), which may return a commit SHA when no release exists.
-  # Keep --tags in sync with get_describe_output() so both agree on the anchor.
-  git describe --tags --abbrev=0 --match "${tag_prefix}[0-9]*.[0-9]*.[0-9]*" --exclude "${tag_prefix}*-*" 2>/dev/null || printf ''
+  # Keep --tags and the filters in sync with get_describe_output() so both
+  # agree on the anchor.
+  git describe --tags --abbrev=0 --match "${tag_prefix}[0-9]*.[0-9]*.[0-9]*" --exclude "${tag_prefix}*-*" --exclude "${tag_prefix}*+*" 2>/dev/null || printf ''
 }
 
 escape_regex() {
@@ -103,14 +105,24 @@ get_changelog_since_tag() {
   git log "$range" --pretty=format:'- %s' --no-merges
 }
 
-get_latest_tag_for_commit_pointed_by_tag() {
-  local -r tag="$1"
+get_highest_release_tag_at() {
+  local -r revision="$1"
+  local -r tag_prefix="$2"
 
-  # git describe can choose any matching tag when several point at one commit.
-  # Re-sort all tags on that commit so `version` reports the highest release.
+  local escaped_tag_prefix
+  escaped_tag_prefix="$(escape_regex "$tag_prefix")"
+
+  # Resolve to the commit first: given an annotated tag name, --points-at would
+  # match only that tag object and miss lightweight tags on the same commit.
   local commit_sha
-  commit_sha="$(git rev-list -1 "$tag")"
-  git tag --points-at "$commit_sha" --list --sort=-version:refname | head -1
+  commit_sha="$(git rev-list -1 "$revision")"
+
+  # Only stable release tags count, so pre-release and unrelated tags on the
+  # same commit can never win the sort. version() and release_tag() both use
+  # this so they always agree on which release a commit is.
+  git tag --points-at "$commit_sha" --list "${tag_prefix}*" --sort=-version:refname 2>/dev/null \
+    | grep -E "^${escaped_tag_prefix}[0-9]+\.[0-9]+\.[0-9]+$" \
+    | head -1
 }
 
 # Substitute template variables into the pre-release format and tidy separators.
@@ -171,8 +183,9 @@ version() {
     commit_count="${BASH_REMATCH[5]}"
     commit_short_sha="${BASH_REMATCH[7]}"
 
-    # If two releases point to the same commit take the latest one
-    if [[ "$(get_latest_tag_for_commit_pointed_by_tag "${tag_prefix}$major_version.$minor_version.$patch_version")" =~ $tag_pattern ]]; then
+    # git describe can choose any matching tag when several point at one commit
+    # (with --tags it prefers annotated over lightweight), so take the highest.
+    if [[ "$(get_highest_release_tag_at "${tag_prefix}$major_version.$minor_version.$patch_version" "$tag_prefix")" =~ $tag_pattern ]]; then
       major_version="${BASH_REMATCH[1]}"
       minor_version="${BASH_REMATCH[2]}"
       patch_version="${BASH_REMATCH[3]}"
@@ -306,13 +319,10 @@ release_tag() {
     return 0
   fi
 
-  local escaped_tag_prefix
-  escaped_tag_prefix="$(escape_regex "$tag_prefix")"
-
   # Only stable release tags count. This lets callers distinguish being on a
   # final release from being on a pre-release tag at the same commit.
   local tag
-  tag="$(git tag --points-at HEAD --list "${tag_prefix}*" --sort=-version:refname 2>/dev/null | grep -E "^${escaped_tag_prefix}[0-9]+\.[0-9]+\.[0-9]+$" | head -1)"
+  tag="$(get_highest_release_tag_at HEAD "$tag_prefix")"
 
   printf '%s\n' "$tag"
 }
