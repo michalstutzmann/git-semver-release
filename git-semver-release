@@ -25,7 +25,8 @@ get_describe_output() {
 
   # Only stable SemVer tags are considered release anchors. Pre-release tags
   # are ignored so a tag like v1.2.3-rc.1 never becomes the base version.
-  git describe --always --match "${tag_prefix}[0-9]*.[0-9]*.[0-9]*" --exclude "${tag_prefix}*-*" 2> /dev/null || {
+  # --tags makes lightweight tags count as well as annotated ones.
+  git describe --tags --always --match "${tag_prefix}[0-9]*.[0-9]*.[0-9]*" --exclude "${tag_prefix}*-*" 2> /dev/null || {
     printf ''
   }
 }
@@ -51,7 +52,8 @@ get_latest_release_tag() {
 
   # Used when scanning history since the last release. This is separate from
   # get_describe_output(), which may return a commit SHA when no release exists.
-  git describe --abbrev=0 --match "${tag_prefix}[0-9]*.[0-9]*.[0-9]*" --exclude "${tag_prefix}*-*" 2>/dev/null || printf ''
+  # Keep --tags in sync with get_describe_output() so both agree on the anchor.
+  git describe --tags --abbrev=0 --match "${tag_prefix}[0-9]*.[0-9]*.[0-9]*" --exclude "${tag_prefix}*-*" 2>/dev/null || printf ''
 }
 
 escape_regex() {

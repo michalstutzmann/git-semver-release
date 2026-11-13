@@ -169,7 +169,7 @@ To push tags created inside the container, mount your Git credentials and pass `
 git-semver-release version
 ```
 
-Returns the current version without creating a tag. If `HEAD` is on a release tag and the working tree is clean, it returns that version exactly. Otherwise (commits since the release, or uncommitted changes), it returns the next patch pre-release version. The pre-release channel defaults to the current branch name (normalized for SemVer); override it with `--channel`. With no prior release, the initial pre-release is `0.1.0-CHANNEL.N.sha` per the SemVer recommendation that initial development starts at `0.1.0`. The examples below assume the branch is `main`.
+Returns the current version without creating a tag. If `HEAD` is on a release tag and the working tree is clean, it returns that version exactly. Otherwise (commits since the release, or uncommitted changes), it returns the next patch pre-release version. The pre-release channel defaults to the current branch name (normalized for SemVer); override it with `--channel`. With no prior release, the initial pre-release is `0.1.0-CHANNEL.N.sha` per the SemVer recommendation that initial development starts at `0.1.0`. Release tags may be annotated or lightweight (e.g. created with plain `git tag v1.2.3`); both count for every command. The examples below assume the branch is `main`.
 
 | Latest release tag | Commits since release | Short SHA | Uncommitted changes | Output |
 |-|-|-|-|-|

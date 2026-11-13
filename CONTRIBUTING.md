@@ -47,6 +47,7 @@ Prefer `bash -n git-semver-release` plus the focused Bats test while iterating, 
 
 - Stable release tags are `vMAJOR.MINOR.PATCH` by default. `tag_prefix` can be configured, including to an empty string.
 - Pre-release tags such as `v1.2.3-rc.1` must not become stable release anchors.
+- Annotated and lightweight stable tags are equally valid release anchors. Every `git describe` call that looks for releases must pass `--tags`; `git tag --points-at` already includes both kinds. Tags the tool creates are still annotated.
 - With no prior release:
   - `version` reports `0.1.0-CHANNEL.N.sha` by default.
   - `patch` and `minor` release `v0.1.0`.

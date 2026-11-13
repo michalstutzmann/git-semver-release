@@ -545,6 +545,19 @@ teardown() {
   assert_output 'v1.2.3'
 }
 
+@test "release-tag prints lightweight tag when HEAD is on a release" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create lightweight release tag
+  lightweight_tag "v1.2.3"
+
+  run ./git-semver-release release-tag
+  assert_success
+  assert_output 'v1.2.3'
+}
+
 @test "release-tag prints empty string when HEAD is on a release with dirty tree" {
   # Initialize Git repository
   initialize
@@ -736,6 +749,106 @@ teardown() {
   commit 'Second'
   # Create pre-release tag
   tag "v1.0.1-alpha"
+  # Create another commit
+  commit 'Third'
+
+  run ./git-semver-release version
+  assert_success
+  assert_output --regexp '^1\.0\.1-main\.2\.[0-9a-f]{7}$'
+}
+
+@test "Calculate version at lightweight release tag" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create lightweight release tag
+  lightweight_tag "v1.0.0"
+
+  run ./git-semver-release version
+  assert_success
+  assert_output '1.0.0'
+}
+
+@test "Calculate version with commits beyond lightweight release tag" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create lightweight release tag
+  lightweight_tag "v1.0.0"
+  # Create another commit
+  commit 'Second'
+
+  run ./git-semver-release version
+  assert_success
+  assert_output --regexp '^1\.0\.1-main\.1\.[0-9a-f]{7}$'
+}
+
+@test "Create patch release after lightweight release tag" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create lightweight release tag
+  lightweight_tag "v1.0.0"
+  # Create another commit
+  commit 'Second'
+
+  run ./git-semver-release patch
+  assert_success
+  assert_output '1.0.1'
+  run git tag --points-at HEAD
+  assert_output --regexp '^v1\.0\.1$'
+}
+
+@test "Conventional release scans only commits since lightweight release tag" {
+  # Initialize Git repository
+  initialize
+  # A feat before the release must not affect the next bump
+  commit 'feat: initial feature'
+  # Create lightweight release tag
+  lightweight_tag "v1.0.0"
+  # Create a fix commit
+  commit 'fix: typo'
+
+  run ./git-semver-release conventional
+  assert_success
+  assert_output '1.0.1'
+  run git tag --points-at HEAD
+  assert_output --regexp '^v1\.0\.1$'
+}
+
+@test "Nearer lightweight release tag wins over older annotated release tag" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create annotated release tag
+  tag "v1.0.0"
+  # Create another commit
+  commit 'Second'
+  # Create lightweight release tag
+  lightweight_tag "v1.1.0"
+  # Create another commit
+  commit 'Third'
+
+  run ./git-semver-release version
+  assert_success
+  assert_output --regexp '^1\.1\.1-main\.1\.[0-9a-f]{7}$'
+}
+
+@test "Lightweight pre-release tag does not affect version command" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create initial release tag
+  tag "v1.0.0"
+  # Create another commit
+  commit 'Second'
+  # Create lightweight pre-release tag
+  lightweight_tag "v1.0.1-alpha"
   # Create another commit
   commit 'Third'
 
@@ -959,4 +1072,10 @@ tag() {
   local name="$1"
 
   git tag --annotate "$name" --message "$name"
+}
+
+lightweight_tag() {
+  local name="$1"
+
+  git tag "$name"
 }
