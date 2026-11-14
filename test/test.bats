@@ -20,7 +20,7 @@ teardown() {
 
 @test "Fail if Git repository is not initialized" {
   run --separate-stderr ./git-semver-release version
-  assert_failure 2
+  assert_failure 4
   assert_stderr 'fatal: not a Git repository'
 }
 
@@ -29,7 +29,7 @@ teardown() {
   initialize
 
   run --separate-stderr ./git-semver-release version
-  assert_failure 3
+  assert_failure 5
   assert_stderr 'error: no commits yet'
 }
 
@@ -82,7 +82,7 @@ teardown() {
   printf 'modified' > "$TEST_FILE"
 
   run --separate-stderr ./git-semver-release patch 'Release'
-  assert_failure 5
+  assert_failure 7
   assert_stderr 'error: uncommitted changes found'
 }
 
@@ -388,6 +388,22 @@ teardown() {
   assert_output --regexp '^v1\.0\.0$'
 }
 
+@test "Create major release with hyphenated BREAKING-CHANGE footer" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create initial release tag
+  tag "v0.0.0"
+  # The footer alone triggers major, even with a non-releasable type
+  commit $'refactor: drop legacy API\n\nBREAKING-CHANGE: legacy API removed'
+
+  run ./git-semver-release conventional 'Release'
+  assert_success
+  run git tag --points-at HEAD
+  assert_output --regexp '^v1\.0\.0$'
+}
+
 @test "Scan all commits since last tag: fix then feat bumps minor" {
   # Initialize Git repository
   initialize
@@ -536,7 +552,7 @@ teardown() {
   commit 'docs: update readme'
 
   run --separate-stderr ./git-semver-release conventional
-  assert_failure 7
+  assert_failure 9
   assert_stderr 'error: no releasable changes found'
 }
 
@@ -551,7 +567,7 @@ teardown() {
   commit 'update something'
 
   run --separate-stderr ./git-semver-release conventional
-  assert_failure 7
+  assert_failure 9
   assert_stderr 'error: no releasable changes found'
 }
 
@@ -648,7 +664,7 @@ teardown() {
   commit 'this is not conventional!: something'
 
   run --separate-stderr ./git-semver-release conventional
-  assert_failure 7
+  assert_failure 9
   assert_stderr 'error: no releasable changes found'
 }
 
@@ -663,7 +679,7 @@ teardown() {
   commit 'featuring: new stuff'
 
   run --separate-stderr ./git-semver-release conventional
-  assert_failure 7
+  assert_failure 9
   assert_stderr 'error: no releasable changes found'
 }
 
@@ -922,6 +938,82 @@ teardown() {
   assert_output 'dev'
 }
 
+@test "Fail on unknown command instead of falling back to version" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+
+  run --separate-stderr ./git-semver-release pacth
+  assert_failure 3
+  assert_output ''
+  assert_stderr --partial 'error: unknown command: pacth'
+}
+
+@test "Fail on unknown option instead of using it as the tag message" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+
+  run --separate-stderr ./git-semver-release patch --dryrun
+  assert_failure 3
+  assert_stderr --partial 'error: unknown option: --dryrun'
+
+  # Verify no tag was created
+  run git tag
+  assert_output ''
+}
+
+@test "Fail on unexpected extra argument" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+
+  # An unquoted message splits into several arguments
+  run --separate-stderr ./git-semver-release patch Release 1.0
+  assert_failure 3
+  assert_stderr --partial 'error: unexpected argument: 1.0'
+
+  # Verify no tag was created
+  run git tag
+  assert_output ''
+}
+
+@test "Fail when --channel has no value" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+
+  run --separate-stderr ./git-semver-release version --channel
+  assert_failure 3
+  assert_stderr --partial 'error: --channel requires a value'
+}
+
+@test "Report usage errors before checking for a Git repository" {
+  run --separate-stderr ./git-semver-release pacth
+  assert_failure 3
+  assert_stderr --partial 'error: unknown command: pacth'
+}
+
+@test "Fail with explicit error on Bash older than 4" {
+  # macOS ships Bash 3.2 as /bin/bash; other systems usually have Bash 4+
+  if [[ ! -x /bin/bash ]] || /bin/bash -c '(( BASH_VERSINFO[0] >= 4 ))'; then
+    skip '/bin/bash is not older than Bash 4'
+  fi
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+
+  run --separate-stderr /bin/bash ./git-semver-release version
+  assert_failure 1
+  assert_output ''
+  assert_stderr --partial 'error: Bash 4 or newer is required'
+}
+
 @test "Push tag with --push flag for conventional release" {
   # Initialize bare remote repository
   env -u GIT_DIR -u GIT_WORK_TREE git init --bare tmp/remote
@@ -977,6 +1069,33 @@ teardown() {
   initialize
   # Set channel in config
   printf 'channel=beta\n' > .git-semver-release.properties
+  # Create initial commit
+  commit 'Initial'
+
+  run ./git-semver-release version
+  assert_success
+  assert_output --regexp '^0\.1\.0-beta\.1\.[0-9a-f]{7}$'
+}
+
+@test "Config ignores blank lines and comment lines" {
+  # Initialize Git repository
+  initialize
+  # Set channel in config surrounded by a comment and blank lines
+  printf '# Pre-release settings\n\nchannel=beta\n\n' > .git-semver-release.properties
+  # Create initial commit
+  commit 'Initial'
+
+  run --separate-stderr ./git-semver-release version
+  assert_success
+  assert_output --regexp '^0\.1\.0-beta\.1\.[0-9a-f]{7}$'
+  assert_stderr ''
+}
+
+@test "Config reads the last line without a trailing newline" {
+  # Initialize Git repository
+  initialize
+  # The last line has no trailing newline
+  printf 'tag_prefix=v\nchannel=beta' > .git-semver-release.properties
   # Create initial commit
   commit 'Initial'
 
@@ -1052,7 +1171,7 @@ teardown() {
   tag "v1.2.3.4"
 
   run --separate-stderr ./git-semver-release version
-  assert_failure 4
+  assert_failure 6
   assert_stderr --partial 'unrecognized git describe output'
 }
 
@@ -1122,6 +1241,124 @@ teardown() {
   assert_output --partial 'Release 0.0.1'
   assert_output --partial '- feat: add search'
   assert_output --partial '- fix: null pointer'
+}
+
+@test "Fail explicit release when the tag cannot be created" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create initial release tag
+  tag "v1.0.0"
+  # Tag v1.0.1 on another branch, so main still computes 1.0.1 as next patch
+  git checkout -b other 2>/dev/null
+  commit 'fix: other'
+  tag "v1.0.1"
+  git checkout main 2>/dev/null
+  commit 'fix: main'
+
+  run --separate-stderr ./git-semver-release patch
+  assert_failure 8
+  assert_output ''
+  assert_stderr --partial "tag 'v1.0.1' already exists"
+}
+
+@test "Fail conventional release when the tag cannot be created" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create initial release tag
+  tag "v1.0.0"
+  # Tag v1.0.1 on another branch, so main still computes 1.0.1 as next patch
+  git checkout -b other 2>/dev/null
+  commit 'fix: other'
+  tag "v1.0.1"
+  git checkout main 2>/dev/null
+  commit 'fix: main'
+
+  run --separate-stderr ./git-semver-release conventional
+  assert_failure 8
+  assert_output ''
+  assert_stderr --partial "tag 'v1.0.1' already exists"
+}
+
+@test "Warn when no release tag is found in a shallow clone" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create initial release tag
+  tag "v1.0.0"
+  # Create another commit
+  commit 'fix: bug fix'
+  # Simulate a depth-1 clone: history is cut at HEAD, hiding v1.0.0
+  git rev-parse HEAD > tmp/.git/shallow
+
+  run --separate-stderr ./git-semver-release version
+  assert_success
+  assert_output --regexp '^0\.1\.0-main\.1\.[0-9a-f]{7}$'
+  assert_stderr --partial 'warning: no release tag found in a shallow clone'
+}
+
+@test "Refuse explicit release when no release tag is found in a shallow clone" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create initial release tag
+  tag "v1.0.0"
+  # Create another commit
+  commit 'fix: bug fix'
+  # Simulate a depth-1 clone: history is cut at HEAD, hiding v1.0.0
+  git rev-parse HEAD > tmp/.git/shallow
+
+  run --separate-stderr ./git-semver-release patch
+  assert_failure 8
+  assert_stderr --partial 'error: no release tag found in a shallow clone'
+
+  # Verify no tag was created
+  run git tag
+  assert_output 'v1.0.0'
+}
+
+@test "Refuse conventional release when no release tag is found in a shallow clone" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create initial release tag
+  tag "v1.0.0"
+  # Create another commit
+  commit 'fix: bug fix'
+  # Simulate a depth-1 clone: history is cut at HEAD, hiding v1.0.0
+  git rev-parse HEAD > tmp/.git/shallow
+
+  run --separate-stderr ./git-semver-release conventional
+  assert_failure 8
+  assert_stderr --partial 'error: no release tag found in a shallow clone'
+
+  # Verify no tag was created
+  run git tag
+  assert_output 'v1.0.0'
+}
+
+@test "Shallow clone that still contains the release tag calculates the version normally" {
+  # Initialize Git repository
+  initialize
+  # Create initial commit
+  commit 'Initial'
+  # Create initial release tag
+  tag "v1.0.0"
+  # Create another commit
+  commit 'fix: bug fix'
+  # Simulate a depth-2 clone: history is cut at the release commit
+  git rev-parse v1.0.0^{commit} > tmp/.git/shallow
+
+  run --separate-stderr ./git-semver-release version
+  assert_success
+  assert_output --regexp '^1\.0\.1-main\.1\.[0-9a-f]{7}$'
+  assert_stderr ''
 }
 
 initialize() {
